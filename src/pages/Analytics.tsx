@@ -49,7 +49,7 @@ export default function Analytics() {
           <Card className="p-4"><HBar data={muns.map((m) => ({ name: m.name, value: m.value, tooltip: `${m.name}: ${m.value} (${m.share}%) · уникальных проблем ${m.uniqueProblems}` }))} onClick={(name) => navigate(`/municipalities/${encodeURIComponent(name)}`)} /></Card>
         </Section>
         <Section title="Качество заявок">
-          <Card className="p-4"><VBar data={qd} onClick={(name) => { const q = qd.find((x) => x.label === name); if (q) navigate(`/applications?quality=${q.key}`) }} /></Card>
+          <Card className="p-4"><VBar data={qd.map((d) => ({ name: d.label, value: d.value }))} onClick={(name) => { const q = qd.find((x) => x.label === name); if (q) navigate(`/applications?quality=${q.key}`) }} /></Card>
         </Section>
         <Section title="Стратегическое соответствие">
           <Card className="p-4"><VBar data={ad.map((d) => ({ name: d.label, value: d.value }))} color="#0E9F6E" onClick={(name) => { const q = ad.find((x) => x.label === name); if (q) navigate(`/applications?align=${q.key}`) }} /></Card>
