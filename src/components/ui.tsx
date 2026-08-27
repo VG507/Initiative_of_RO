@@ -62,7 +62,7 @@ export function SkeletonGrid({ n = 8 }: { n?: number }) {
   return <div className="grid grid-cols-2 gap-3 md:grid-cols-4">{Array.from({ length: n }).map((_, i) => <Skeleton key={i} className="h-20" />)}</div>
 }
 
-export function EmptyState({ title, description, action }: { title: string; description?: string; action?: { label: string; to: string; onClick?: () => void } }) {
+export function EmptyState({ title, description, action }: { title: string; description?: string; action?: { label: string; to?: string; onClick?: () => void } }) {
   return (
     <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-slate-300 bg-white px-6 py-14 text-center dark:border-slate-700 dark:bg-slate-900">
       <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{title}</p>
