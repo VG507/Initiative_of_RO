@@ -68,7 +68,7 @@ export function EmptyState({ title, description, action }: { title: string; desc
       <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{title}</p>
       {description && <p className="mt-1 max-w-sm text-xs text-slate-500 dark:text-slate-400">{description}</p>}
       {action && (
-        action.onClick ? <button onClick={action.onClick} className="mt-4 rounded-md bg-accent px-3 py-1.5 text-xs font-medium text-white hover:bg-accent-600">{action.label}</button>
+        action.onClick || !action.to ? <button onClick={action.onClick} className="mt-4 rounded-md bg-accent px-3 py-1.5 text-xs font-medium text-white hover:bg-accent-600">{action.label}</button>
         : <Link to={action.to} className="mt-4 rounded-md bg-accent px-3 py-1.5 text-xs font-medium text-white hover:bg-accent-600">{action.label}</Link>
       )}
     </div>
