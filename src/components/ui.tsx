@@ -84,7 +84,7 @@ export function Select({ value, onChange, options, ariaLabel }: { value: string;
   )
 }
 
-export function MultiSelect({ label, options, selected, onChange }: { label: string; options: { value: string; label: string }[]; selected: string[]; onChange: (v: string[]) => void }) {
+export function MultiSelect({ label, options, selected, onChange }: { label: string; options: { value: string; label: string; count?: number }[]; selected: string[]; onChange: (v: string[]) => void }) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   useEffect(() => {
