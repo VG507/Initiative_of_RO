@@ -7,10 +7,12 @@ import { HBar, VBar, DynamicsChart } from '../charts/Charts'
 import { alignmentDist, byDirection, byMunicipality, qualityDist, topProblems, topCandidates } from '../utils/analytics'
 import { buildReport, download, fmtDate, plural } from '../utils/format'
 import { ALIGN_LABELS } from '../types'
+import { useToast } from './useToast'
 
 export default function Dashboard() {
   const { applications, clusters, loading } = useStore()
   const navigate = useNavigate()
+  const showToast = useToast()  
   const kpi = useMemo(() => {
     const rel = applications.filter((a) => a.analysis.relevance === 'relevant')
     return {
@@ -47,7 +49,7 @@ export default function Dashboard() {
         </div>
         <div className="flex items-center gap-2">
           <span className="text-xs text-slate-400">Данные на: {lastDate ? fmtDate(lastDate) : '—'}</span>
-          <button onClick={() => download('report.md', buildReport(applications, clusters), 'text/markdown')} className="flex items-center gap-1.5 rounded-md border border-slate-300 px-3 py-2 text-xs hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800"><Download className="h-3.5 w-3.5" />Отчёт</button>
+                    <button onClick={() => { download('report.md', buildReport(applications, clusters), 'text/markdown'); showToast('Отчёт сформирован') }} className="flex items-center gap-1.5 rounded-md border border-slate-300 px-3 py-2 text-xs hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800"><Download className="h-3.5 w-3.5" />Отчёт</button>
         </div>
       </div>
 
@@ -117,8 +119,8 @@ export default function Dashboard() {
         <Section title="Самые обсуждаемые проблемы" hint="Рейтинг по количеству заявок в кластере">
           <div className="space-y-2">
             {discussed.map((c) => (
-              <Link key={c.id} to={`/clusters/${c.id}`} className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm hover:border-accent/50 dark:border-slate-800 dark:bg-slate-900">
-                <span className="truncate pr-3">{c.title}</span><Badge tone="slate">{c.frequency} заявок</Badge>
+              <Link key={c.id} to={`/clusters/${c.id}`} className="flex min-w-0 items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm hover:border-accent/50 dark:border-slate-800 dark:bg-slate-900">
+                <span className="min-w-0 flex-1 truncate pr-3">{c.title}</span><Badge tone="slate">{c.frequency} заявок</Badge>
               </Link>
             ))}
           </div>
@@ -126,8 +128,8 @@ export default function Dashboard() {
         <Section title="Самые перспективные инициативы" hint="Полезность + значимость + стратегическое соответствие отдельной заявки">
           <div className="space-y-2">
             {candidates.map((a) => (
-              <Link key={a.id} to={`/applications/${a.id}`} className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm hover:border-accent/50 dark:border-slate-800 dark:bg-slate-900">
-                <span className="truncate pr-3">{a.analysis.normalizedTitle}</span><Badge tone="blue">{a.analysis.usefulnessScore}/100</Badge>
+              <Link key={a.id} to={`/applications/${a.id}`} className="flex min-w-0 items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm hover:border-accent/50 dark:border-slate-800 dark:bg-slate-900">
+                <span className="min-w-0 flex-1 truncate pr-3">{a.analysis.normalizedTitle}</span><Badge tone="blue">{a.analysis.usefulnessScore}/100</Badge>
               </Link>
             ))}
           </div>

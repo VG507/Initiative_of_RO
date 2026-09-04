@@ -18,7 +18,9 @@ export default function Submit() {
 
   const cities = [...new Set(applications.map((a) => a.cityNorm))].sort((a, b) => a.localeCompare(b, 'ru'))
   const topicOpts = STRATEGY_DIRECTIONS.map((d) => ({ value: d.name, label: d.short }))
-  const subOpts = [...new Set(applications.filter((a) => !form.topic || a.topic === form.topic).map((a) => a.subtopic))].map((s) => ({ value: s, label: s }))
+  const subOpts = form.topic
+    ? [...new Set(applications.filter((a) => a.topic === form.topic).map((a) => a.subtopic))].map((s) => ({ value: s, label: s }))
+    : []
 
   const set = (k: string, v: string) => { setForm((f) => ({ ...f, [k]: v })); setErrors((e) => ({ ...e, [k]: '' })) }
 

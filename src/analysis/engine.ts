@@ -3,7 +3,7 @@ import type {
   ProblemCluster, QualityLevel, SeedRow, SimilarRef, StrategicAlignment,
 } from '../types'
 import { matchStrategy } from '../strategy/strategyData'
-import { cosine, makeTitle, sentences, tfMap, tokenize, trim90 } from './textUtils'
+import { cosine, decodeEntities, makeTitle, sentences, tfMap, tokenize, trim90 } from './textUtils'
 
 const PLACE_RE = /(улиц|проспект|бульвар|мкр|микрорайон|район|снт|сквер|площад|набережн|трасс|школ[аыуе]|садик|детск сад|стадион|арен|парковк|парк\b|автовокзал|поселк|хутор|станиц)/i
 const ACTION = ['предлаг','прошу','необходим','нужн','созда','постро','установ','провест','организова','разреш','разработ','открыт','модерниз','восстанов','обустро','расшир','внедр','запуст','рассмотр','перевест','ужесточ','принять','вернуть','возродить','увеличить','сделайте','постройте']
@@ -97,10 +97,20 @@ function mode(items: string[]): string {
 }
 
 export function analyzeDataset(rows: SeedRow[]): AnalysisResult {
-  const apps: Application[] = rows.map((r) => ({
-    ...r, cityNorm: normalizeCity(r.city), dateIso: toIsoDate(r.date),
-    analysis: undefined as unknown as ApplicationAnalysis,
-  }))
+    const apps: Application[] = rows.map((r) => {
+    const city = decodeEntities(r.city)
+    return {
+      ...r,
+      city,
+      topic: decodeEntities(r.topic),
+      subtopic: decodeEntities(r.subtopic),
+      text: decodeEntities(r.text),
+      statusInitiative: r.statusInitiative ? decodeEntities(r.statusInitiative) : null,
+      cityNorm: normalizeCity(city),
+      dateIso: toIsoDate(r.date),
+      analysis: undefined as unknown as ApplicationAnalysis,
+    }
+  })
   const rel = apps.map((a) => detectRelevance(a.text))
   const toks = apps.map((a) => tokenize(`${a.subtopic} ${a.cityNorm} ${a.text}`))
   const tfs = toks.map(tfMap)

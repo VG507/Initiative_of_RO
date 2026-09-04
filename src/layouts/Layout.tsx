@@ -52,6 +52,11 @@ export default function Layout() {
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
   const [q, setQ] = useState('')
+  useEffect(() => {
+    if (q.trim().length < 2) return
+    const t = setTimeout(() => navigate(`/applications?q=${encodeURIComponent(q.trim())}`), 400)
+    return () => clearTimeout(t)
+  }, [q, navigate])
   useEffect(() => { init() }, [init])
   useEffect(() => { document.documentElement.classList.toggle('dark', theme === 'dark') }, [theme])
   useEffect(() => { window.scrollTo(0, 0); setOpen(false) }, [location.pathname])

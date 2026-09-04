@@ -50,3 +50,13 @@ export function makeTitle(text: string, subtopic: string): string {
 export function sentences(text: string): string[] {
   return (text.replace(/\s+/g, ' ').match(/[^.!?]+[.!?]*/g) || []).map((s) => s.trim()).filter((s) => s.length > 2)
 }
+
+export function decodeEntities(s: string): string {
+  if (!s) return s
+  return s
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&') // последним — чтобы не декодировать дважды
+}

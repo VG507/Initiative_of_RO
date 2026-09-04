@@ -34,7 +34,7 @@ export default function ApplicationDetail() {
     <div className="space-y-6">
       <Link to="/applications" className="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-accent"><ArrowLeft className="h-3.5 w-3.5" />Все заявки</Link>
       <div>
-        <p className="text-xs text-slate-400">#{app.id} · {fmtDate(app.dateIso)} {app.time}</p>
+        <p className="text-xs text-slate-400">#{app.id} · {fmtDate(app.dateIso)}{app.time ? ` · ${app.time}` : ''}</p>
         <h1 className="mt-1 text-xl font-semibold tracking-tight">{an.normalizedTitle}</h1>
         <p className="mt-1 text-sm text-slate-500">{app.cityNorm} · {app.subtopic}</p>
         <div className="mt-3 flex flex-wrap gap-1.5">
