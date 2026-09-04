@@ -97,12 +97,12 @@ export default function Dashboard() {
         <div className="space-y-2">
           {problems.length === 0 && <p className="text-sm text-slate-500">Повторяющихся проблем пока не найдено.</p>}
           {problems.map((c) => (
-            <Link key={c.id} to={`/clusters/${c.id}`} className="flex min-w-0 items-center gap-4 rounded-lg border border-slate-200 bg-white p-3 hover:border-accent/50 dark:border-slate-800 dark:bg-slate-900">
-              <div className="min-w-0 flex-1">
+            <Link key={c.id} to={`/clusters/${c.id}`} className="flex w-full min-w-0 items-center gap-3 overflow-hidden rounded-lg border border-slate-200 bg-white p-3 hover:border-accent/50 dark:border-slate-800 dark:bg-slate-900">
+              <div className="min-w-0 flex-1 overflow-hidden">
                 <p className="truncate text-sm font-medium">{c.title}</p>
                 <p className="mt-0.5 truncate text-xs text-slate-500">{c.subtopic} · {c.municipalities.join(', ')} · {ALIGN_LABELS[c.alignment]}</p>
               </div>
-              <div className="hidden w-40 shrink-0 sm:block">
+              <div className="hidden w-32 shrink-0 sm:block">
                 <div className="h-1.5 rounded-full bg-slate-100 dark:bg-slate-800"><div className="h-1.5 rounded-full bg-accent" style={{ width: `${c.impactScore}%` }} /></div>
                 <p className="mt-1 text-right text-[11px] text-slate-400">индекс {c.impactScore}</p>
               </div>
@@ -119,9 +119,9 @@ export default function Dashboard() {
         <Section title="Самые обсуждаемые проблемы" hint="Рейтинг по количеству заявок в кластере">
           <div className="space-y-2">
             {discussed.map((c) => (
-              <Link key={c.id} to={`/clusters/${c.id}`} className="flex min-w-0 items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm hover:border-accent/50 dark:border-slate-800 dark:bg-slate-900">
+              <Link key={c.id} to={`/clusters/${c.id}`} className="flex w-full min-w-0 items-center justify-between gap-2 overflow-hidden rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm hover:border-accent/50 dark:border-slate-800 dark:bg-slate-900">
                 <span className="min-w-0 flex-1 truncate">{c.title}</span>
-                <Badge tone="slate">{c.frequency} заявок</Badge>
+                <span className="shrink-0"><Badge tone="slate">{c.frequency} заявок</Badge></span>
               </Link>
             ))}
           </div>

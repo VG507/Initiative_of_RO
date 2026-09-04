@@ -47,7 +47,11 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
 }
 
 export default function Layout() {
-  const { init, theme, toggleTheme, loading, error } = useStore()
+  const init = useStore((s) => s.init)
+  const theme = useStore((s) => s.theme)
+  const toggleTheme = useStore((s) => s.toggleTheme)
+  const loading = useStore((s) => s.loading)
+  const error = useStore((s) => s.error)
   const location = useLocation()
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
@@ -55,12 +59,20 @@ export default function Layout() {
   useEffect(() => { init() }, [init])
   useEffect(() => { document.documentElement.classList.toggle('dark', theme === 'dark') }, [theme])
   useEffect(() => { window.scrollTo(0, 0); setOpen(false) }, [location.pathname])
-  // живой поиск в шапке с задержкой — без «дёргания» на каждую букву
+
+  const doSearch = (value: string) => {
+    const v = value.trim()
+    if (!v) return
+    const p = new URLSearchParams()
+    p.set('q', v)
+    // если уже на странице заявок — заменяем запись истории: страница не «прыгает»
+    navigate(`/applications?${p.toString()}`, { replace: location.pathname === '/applications' })
+  }
   useEffect(() => {
     if (q.trim().length < 2) return
-    const t = setTimeout(() => navigate(`/applications?q=${encodeURIComponent(q.trim())}`), 400)
+    const t = setTimeout(() => doSearch(q), 400)
     return () => clearTimeout(t)
-  }, [q, navigate])
+  }, [q])
 
   return (
     <div className="min-h-screen">
@@ -76,8 +88,7 @@ export default function Layout() {
       <div className="flex min-h-screen flex-col lg:pl-64">
         <header className="sticky top-0 z-20 flex h-16 items-center gap-2 border-b border-slate-200 bg-white/90 px-3 backdrop-blur dark:border-slate-800 dark:bg-slate-900/90 sm:gap-3 sm:px-6">
           <button aria-label="Меню" className="shrink-0 rounded-md p-2 hover:bg-slate-100 dark:hover:bg-slate-800 lg:hidden" onClick={() => setOpen(true)}><Menu className="h-5 w-5" /></button>
-          {/* поиск виден и на мобильных */}
-          <form className="relative min-w-0 flex-1" onSubmit={(e) => { e.preventDefault(); if (q.trim()) navigate(`/applications?q=${encodeURIComponent(q.trim())}`) }}>
+          <form className="relative min-w-0 flex-1" onSubmit={(e) => { e.preventDefault(); doSearch(q) }}>
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input value={q} onChange={(e) => setQ(e.target.value)} aria-label="Поиск по заявкам" placeholder="Поиск…" className="h-9 w-full rounded-md border border-slate-300 bg-white pl-9 pr-3 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent dark:border-slate-700 dark:bg-slate-800" />
           </form>

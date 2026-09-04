@@ -1,9 +1,10 @@
+import { memo } from 'react'
 import { Link } from 'react-router-dom'
 import { AlignBadge, Badge, Card, ScoreBadge } from '../ui'
 import { fmtDate } from '../../utils/format'
 import { QUALITY_LABELS, STATUS_LABELS, type Application } from '../../types'
 
-export function ApplicationCard({ app }: { app: Application }) {
+export const ApplicationCard = memo(function ApplicationCard({ app }: { app: Application }) {
   const an = app.analysis
   return (
     <Link to={`/applications/${app.id}`} className="group flex flex-col rounded-lg border border-slate-200 bg-white p-4 transition hover:border-accent/50 hover:shadow-sm dark:border-slate-800 dark:bg-slate-900">
@@ -29,7 +30,7 @@ export function ApplicationCard({ app }: { app: Application }) {
       </div>
     </Link>
   )
-}
+})
 
 export function ApplicationTable({ apps }: { apps: Application[] }) {
   return (

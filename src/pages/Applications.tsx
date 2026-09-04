@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Copy, Download, Filter, LayoutGrid, List, Search } from 'lucide-react'
 import { useStore } from '../store/useStore'
@@ -18,13 +18,24 @@ const PRESETS = [
 
 export default function Applications() {
   const [searchParams, setSearchParams] = useSearchParams()
-  const { filters, sort, view, page, pageSize, loading, setFilters, resetFilters, setSort, setView, setPage, setPageSize } = useStore()
+  const filters = useStore((s) => s.filters)
+  const sort = useStore((s) => s.sort)
+  const view = useStore((s) => s.view)
+  const page = useStore((s) => s.page)
+  const pageSize = useStore((s) => s.pageSize)
+  const loading = useStore((s) => s.loading)
   const total = useStore((s) => s.applications.length)
+  const setFilters = useStore((s) => s.setFilters)
+  const resetFilters = useStore((s) => s.resetFilters)
+  const setSort = useStore((s) => s.setSort)
+  const setView = useStore((s) => s.setView)
+  const setPage = useStore((s) => s.setPage)
+  const setPageSize = useStore((s) => s.setPageSize)
   const filtered = useFilteredApps()
   const [open, setOpen] = useState(false)
   const showToast = useToast()
 
-  // Поле ввода живёт локально; в store уходит с задержкой 250 мс (debounce) — без мигания на каждую букву
+  // Поле ввода живёт локально; в стор уходит с задержкой 250 мс — печать не дёргает список
   const [searchInput, setSearchInput] = useState(filters.search)
   useEffect(() => { setSearchInput(filters.search) }, [filters.search])
   useEffect(() => {
@@ -37,19 +48,27 @@ export default function Applications() {
     return () => clearTimeout(t)
   }, [searchInput])
 
-  // URL -> состояние (переход по ссылке с фильтрами)
+  // URL -> состояние: применяем ТОЛЬКО внешние изменения (ссылка, поиск из шапки, «назад»).
+  // Собственную запись в URL пропускаем — иначе «пинг-понг» и мигание
+  const lastUrl = useRef<string | null>(null)
+  const skipUrlWrite = useRef(false)
   useEffect(() => {
-    const st = searchToState(new URLSearchParams(searchParams.toString()))
+    const qs = searchParams.toString()
+    if (lastUrl.current === qs) return
+    lastUrl.current = qs
+    skipUrlWrite.current = true
+    const st = searchToState(new URLSearchParams(qs))
     useStore.setState({ filters: st.filters, sort: st.sort, view: st.view, page: st.page, pageSize: st.size })
   }, [searchParams])
 
-  // Состояние -> URL (ссылку можно скопировать и отправить)
+  // Состояние -> URL: тихо, одной записью, без перезагрузки состояния
   useEffect(() => {
+    if (skipUrlWrite.current) { skipUrlWrite.current = false; return }
     const qs = filtersToSearch(filters, sort, view, page, pageSize)
-    if (searchParams.toString() !== qs) {
-      setSearchParams(qs ? `?${qs}` : '?', { replace: true })
-    }
-  }, [filters, sort, view, page, pageSize, searchParams, setSearchParams])
+    if (lastUrl.current === qs) return
+    lastUrl.current = qs
+    setSearchParams(qs ? `?${qs}` : '?', { replace: true })
+  }, [filters, sort, view, page, pageSize])
 
   const start = (page - 1) * pageSize
   const pageItems = filtered.slice(start, start + pageSize)
