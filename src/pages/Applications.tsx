@@ -24,14 +24,26 @@ export default function Applications() {
   const [open, setOpen] = useState(false)
   const showToast = useToast()
 
-  // URL -> состояние (при переходе по ссылке с фильтрами)
+  // Поле ввода живёт локально; в store уходит с задержкой 250 мс (debounce) — без мигания на каждую букву
+  const [searchInput, setSearchInput] = useState(filters.search)
+  useEffect(() => { setSearchInput(filters.search) }, [filters.search])
+  useEffect(() => {
+    const t = setTimeout(() => {
+      if (searchInput !== filters.search) {
+        setFilters({ search: searchInput, preset: 'all' })
+        if (searchInput.trim() && sort === 'usefulness_desc') setSort('relevance')
+      }
+    }, 250)
+    return () => clearTimeout(t)
+  }, [searchInput])
+
+  // URL -> состояние (переход по ссылке с фильтрами)
   useEffect(() => {
     const st = searchToState(new URLSearchParams(searchParams.toString()))
     useStore.setState({ filters: st.filters, sort: st.sort, view: st.view, page: st.page, pageSize: st.size })
   }, [searchParams])
 
   // Состояние -> URL (ссылку можно скопировать и отправить)
-   // Состояние -> URL (ссылку можно скопировать и отправить)
   useEffect(() => {
     const qs = filtersToSearch(filters, sort, view, page, pageSize)
     if (searchParams.toString() !== qs) {
@@ -65,10 +77,10 @@ export default function Applications() {
       </div>
 
       <Card className="flex flex-wrap items-center gap-2 p-3">
-        <div className="relative min-w-[220px] flex-1">
+        <div className="relative min-w-[180px] flex-1">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-          <input value={filters.search} aria-label="Поиск" placeholder="Поиск по тексту, теме, муниципалитету, ID…"
-            onChange={(e) => { const v = e.target.value; setFilters({ search: v, preset: 'all' }); if (v && sort === 'usefulness_desc') setSort('relevance') }}
+          <input value={searchInput} aria-label="Поиск" placeholder="Поиск по тексту, теме, муниципалитету, ID…"
+            onChange={(e) => setSearchInput(e.target.value)}
             className="h-9 w-full rounded-md border border-slate-300 bg-white pl-9 pr-3 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent dark:border-slate-700 dark:bg-slate-800" />
         </div>
         <div className="w-56"><Select ariaLabel="Сортировка" value={sort} onChange={setSort} options={SORT_OPTIONS} /></div>

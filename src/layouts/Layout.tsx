@@ -52,14 +52,15 @@ export default function Layout() {
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
   const [q, setQ] = useState('')
+  useEffect(() => { init() }, [init])
+  useEffect(() => { document.documentElement.classList.toggle('dark', theme === 'dark') }, [theme])
+  useEffect(() => { window.scrollTo(0, 0); setOpen(false) }, [location.pathname])
+  // живой поиск в шапке с задержкой — без «дёргания» на каждую букву
   useEffect(() => {
     if (q.trim().length < 2) return
     const t = setTimeout(() => navigate(`/applications?q=${encodeURIComponent(q.trim())}`), 400)
     return () => clearTimeout(t)
   }, [q, navigate])
-  useEffect(() => { init() }, [init])
-  useEffect(() => { document.documentElement.classList.toggle('dark', theme === 'dark') }, [theme])
-  useEffect(() => { window.scrollTo(0, 0); setOpen(false) }, [location.pathname])
 
   return (
     <div className="min-h-screen">
@@ -73,13 +74,14 @@ export default function Layout() {
       </aside>
 
       <div className="flex min-h-screen flex-col lg:pl-64">
-        <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-slate-200 bg-white/90 px-4 backdrop-blur dark:border-slate-800 dark:bg-slate-900/90 sm:px-6">
-          <button aria-label="Меню" className="rounded-md p-2 hover:bg-slate-100 dark:hover:bg-slate-800 lg:hidden" onClick={() => setOpen(true)}><Menu className="h-5 w-5" /></button>
-          <form className="relative hidden max-w-md flex-1 sm:block" onSubmit={(e) => { e.preventDefault(); if (q.trim()) navigate(`/applications?q=${encodeURIComponent(q.trim())}`) }}>
+        <header className="sticky top-0 z-20 flex h-16 items-center gap-2 border-b border-slate-200 bg-white/90 px-3 backdrop-blur dark:border-slate-800 dark:bg-slate-900/90 sm:gap-3 sm:px-6">
+          <button aria-label="Меню" className="shrink-0 rounded-md p-2 hover:bg-slate-100 dark:hover:bg-slate-800 lg:hidden" onClick={() => setOpen(true)}><Menu className="h-5 w-5" /></button>
+          {/* поиск виден и на мобильных */}
+          <form className="relative min-w-0 flex-1" onSubmit={(e) => { e.preventDefault(); if (q.trim()) navigate(`/applications?q=${encodeURIComponent(q.trim())}`) }}>
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            <input value={q} onChange={(e) => setQ(e.target.value)} aria-label="Поиск по заявкам" placeholder="Поиск: «дороги в Новочеркасске»…" className="h-9 w-full rounded-md border border-slate-300 bg-white pl-9 pr-3 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent dark:border-slate-700 dark:bg-slate-800" />
+            <input value={q} onChange={(e) => setQ(e.target.value)} aria-label="Поиск по заявкам" placeholder="Поиск…" className="h-9 w-full rounded-md border border-slate-300 bg-white pl-9 pr-3 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent dark:border-slate-700 dark:bg-slate-800" />
           </form>
-          <div className="ml-auto flex items-center gap-2">
+          <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-2">
             <button aria-label="Переключить тему" onClick={toggleTheme} className="rounded-md p-2 hover:bg-slate-100 dark:hover:bg-slate-800">
               {theme === 'light' ? <Moon className="h-5 w-5 text-slate-500" /> : <Sun className="h-5 w-5 text-slate-400" />}
             </button>
@@ -90,7 +92,9 @@ export default function Layout() {
         {error && <div className="border-b border-red-200 bg-red-50 px-6 py-2 text-xs text-red-700 dark:border-red-900 dark:bg-red-900/30 dark:text-red-300">{error}</div>}
 
         <main className="mx-auto w-full max-w-[1400px] flex-1 px-4 py-6 sm:px-6 lg:px-8">
-          <Outlet />
+          <div key={location.pathname} className="page-fade">
+            <Outlet />
+          </div>
         </main>
         <footer className="border-t border-slate-200 px-6 py-4 text-[11px] text-slate-400 dark:border-slate-800">
           Данные обезличены · Аналитическая классификация, не официальное решение государственного органа

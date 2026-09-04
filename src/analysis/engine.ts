@@ -15,9 +15,25 @@ const PROP = ['прошу','предлагаю','предлагает','необ
 const clamp = (n: number, a: number, b: number) => Math.max(a, Math.min(b, n))
 
 export function normalizeCity(city: string): string { return city.replace(/^город\s+/i, '').trim() }
-export function toIsoDate(dmy: string): string {
-  const m = dmy.match(/(\d{2})\.(\d{2})\.(\d{4})/)
-  return m ? `${m[3]}-${m[2]}-${m[1]}` : dmy
+export function toIsoDate(raw: unknown): string {
+  if (raw == null) return ''
+  if (raw instanceof Date && !isNaN(raw.getTime())) {
+    return new Date(raw.getTime() - raw.getTimezoneOffset() * 60000).toISOString().slice(0, 10)
+  }
+  const s = String(raw).trim()
+  if (!s || s === '*') return ''
+  const iso = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/)
+  if (iso) return `${iso[1]}-${iso[2].padStart(2, '0')}-${iso[3].padStart(2, '0')}`
+  const dmy = s.match(/^(\d{1,2})[.\-/](\d{1,2})[.\-/](\d{4})/)
+  if (dmy) return `${dmy[4]}-${dmy[2].padStart(2, '0')}-${dmy[1].padStart(2, '0')}`
+  if (/^\d{1,6}(\.\d+)?$/.test(s)) {
+    const n = parseFloat(s)
+    if (n > 20000 && n < 60000) { // серийная дата Excel
+      return new Date(Math.round((n - 25569) * 86400000)).toISOString().slice(0, 10)
+    }
+  }
+  const d = new Date(s)
+  return isNaN(d.getTime()) ? '' : d.toISOString().slice(0, 10)
 }
 
 function detectRelevance(text: string): { relevant: boolean; reason?: string } {

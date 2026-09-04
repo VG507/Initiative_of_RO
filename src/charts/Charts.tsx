@@ -14,7 +14,6 @@ function ChartTooltip({ active, payload, label, suffix }: any) {
   )
 }
 
-// Доступная обёртка: имя графика читается скринридером, содержимое SVG скрыто
 function A11yChart({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div role="img" aria-label={label}>
@@ -26,6 +25,8 @@ function A11yChart({ label, children }: { label: string; children: ReactNode }) 
 const dataLabel = (data: { name: string; value: number }[]) =>
   data.map((d) => `${d.name} — ${d.value}`).join(', ')
 
+const tickFmt = (v: string) => (v && v.length > 14 ? v.slice(0, 13) + '…' : v)
+
 export function HBar({ data, height = 300, onClick, suffix = 'заявок', ariaLabel }: {
   data: { name: string; value: number; tooltip?: string }[]
   height?: number; onClick?: (name: string) => void; suffix?: string; ariaLabel?: string
@@ -33,13 +34,13 @@ export function HBar({ data, height = 300, onClick, suffix = 'заявок', ari
   return (
     <A11yChart label={ariaLabel ?? `Распределение заявок: ${dataLabel(data)}`}>
       <ResponsiveContainer width="100%" height={height}>
-        <BarChart data={data} layout="vertical" margin={{ top: 4, right: 16, left: 8, bottom: 4 }}
+        <BarChart data={data} layout="vertical" margin={{ top: 4, right: 16, left: 0, bottom: 4 }}
           onClick={(s: any) => { const p = s?.activePayload?.[0]?.payload; if (p && onClick) onClick(p.name) }}>
           <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
           <XAxis type="number" tick={{ fontSize: 11, fill: '#94a3b8' }} allowDecimals={false} />
-          <YAxis type="category" dataKey="name" width={170} tick={{ fontSize: 11, fill: '#64748b' }} tickLine={false} />
+          <YAxis type="category" dataKey="name" width={140} tick={{ fontSize: 11, fill: '#64748b' }} tickLine={false} tickFormatter={tickFmt} />
           <Tooltip content={<ChartTooltip suffix={suffix} />} cursor={{ fill: '#0F4C810D' }} />
-          <Bar dataKey="value" fill="#0F4C81" radius={[0, 3, 3, 0]} maxBarSize={22}>
+          <Bar dataKey="value" fill="#0F4C81" radius={[0, 3, 3, 0]} maxBarSize={22} isAnimationActive={false}>
             {data.map((_, i) => <Cell key={i} fill={i === 0 ? '#0F4C81' : '#5B8DB8'} />)}
           </Bar>
         </BarChart>
@@ -52,16 +53,20 @@ export function VBar({ data, height = 260, color = '#0F4C81', onClick, suffix = 
   data: { name: string; value: number; tooltip?: string }[]
   height?: number; color?: string; onClick?: (name: string) => void; suffix?: string; ariaLabel?: string
 }) {
+  // наклоняем подписи, если их много или они длинные — иначе наплывают
+  const angled = data.length > 4 || data.some((d) => d.name.length > 10)
   return (
     <A11yChart label={ariaLabel ?? `Распределение заявок: ${dataLabel(data)}`}>
       <ResponsiveContainer width="100%" height={height}>
         <BarChart data={data} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}
           onClick={(s: any) => { const p = s?.activePayload?.[0]?.payload; if (p && onClick) onClick(p.name) }}>
           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-          <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#64748b' }} interval={0} angle={data.length > 6 ? -25 : 0} textAnchor={data.length > 6 ? 'end' : 'middle'} height={data.length > 6 ? 54 : 26} />
+          <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#64748b' }} interval={0}
+            angle={angled ? -30 : 0} textAnchor={angled ? 'end' : 'middle'}
+            height={angled ? 64 : 30} tickFormatter={tickFmt} />
           <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} allowDecimals={false} />
           <Tooltip content={<ChartTooltip suffix={suffix} />} cursor={{ fill: '#0F4C810D' }} />
-          <Bar dataKey="value" fill={color} radius={[3, 3, 0, 0]} maxBarSize={34} />
+          <Bar dataKey="value" fill={color} radius={[3, 3, 0, 0]} maxBarSize={34} isAnimationActive={false} />
         </BarChart>
       </ResponsiveContainer>
     </A11yChart>
@@ -87,7 +92,7 @@ export function DynamicsChart({ apps }: { apps: Application[] }) {
             <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#94a3b8' }} />
             <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} allowDecimals={false} />
             <Tooltip content={<ChartTooltip suffix="заявок" />} />
-            <Area type="monotone" dataKey="value" stroke="#0F4C81" strokeWidth={2} fill="url(#dg)" />
+            <Area type="monotone" dataKey="value" stroke="#0F4C81" strokeWidth={2} fill="url(#dg)" isAnimationActive={false} />
           </AreaChart>
         </ResponsiveContainer>
       </A11yChart>

@@ -42,14 +42,24 @@ export function weekKey(iso: string): string {
   d.setDate(d.getDate() - ((d.getDay() + 6) % 7))
   return d.toISOString().slice(0, 10)
 }
+
+// Динамика: группировка строго по дате, короткие подписи «15.07», заявки без даты пропускаются
 export function dynamicsSeries(apps: Application[], g: 'day' | 'week' | 'month') {
-  const m = new Map<string, number>()
+  const m = new Map<string, { label: string; value: number }>()
   for (const a of apps) {
-    const k = g === 'day' ? a.dateIso : g === 'week' ? weekKey(a.dateIso) : a.dateIso.slice(0, 7)
-    m.set(k, (m.get(k) || 0) + 1)
+    const iso = a.dateIso || ''
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) continue
+    const k = g === 'day' ? iso : g === 'week' ? weekKey(iso) : iso.slice(0, 7)
+    const label = g === 'month' ? `${k.slice(5)}.${k.slice(0, 4)}` : `${k.slice(8)}.${k.slice(5, 7)}`
+    const e = m.get(k)
+    if (e) e.value++
+    else m.set(k, { label, value: 1 })
   }
-  return [...m.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([name, value]) => ({ name, value }))
+  return [...m.entries()]
+    .sort((x, y) => x[0].localeCompare(y[0]))
+    .map(([name, e]) => ({ name: e.label, value: e.value }))
 }
+
 export function topProblems(clusters: ProblemCluster[], n = 10) {
   return clusters.filter((c) => c.frequency >= 2).sort((a, b) => b.impactScore - a.impactScore).slice(0, n)
 }
