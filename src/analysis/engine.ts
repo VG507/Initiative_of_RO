@@ -4,6 +4,7 @@ import type {
 } from '../types'
 import { matchStrategy } from '../strategy/strategyData'
 import { computeIdf, cosine, decodeEntities, makeTitle, sentences, tfidfMap, tokenize, trim90 } from './textUtils'
+import { computeEconomicEffect, computeExecutionTracking } from '../services/executionEconomicService'
 
 const PLACE_RE = /(улиц|проспект|бульвар|мкр|микрорайон|район|снт|сквер|площад|набережн|трасс|школ[аыуе]|садик|детск сад|стадион|арен|парковк|парк\b|автовокзал|поселк|хутор|станиц)/i
 const ACTION = ['предлаг','прошу','необходим','нужн','созда','постро','установ','провест','организова','разреш','разработ','открыт','модерниз','восстанов','обустро','расшир','внедр','запуст','рассмотр','перевест','ужесточ','принять','вернуть','возродить','увеличить','сделайте','постройте']
@@ -37,13 +38,45 @@ export function toIsoDate(raw: unknown): string {
 }
 
 function detectRelevance(text: string): { relevant: boolean; reason?: string } {
-  if (text.trim().length < 30) return { relevant: false, reason: 'Слишком короткое сообщение' }
-  const t = text.toLowerCase().replace(/ё/g, 'е')
+  const clean = text.trim()
+  if (clean.length < 35) return { relevant: false, reason: 'Слишком короткое сообщение' }
+  const t = clean.toLowerCase().replace(/ё/g, 'е')
+
+  // 1. Потребительский эгоизм, бытовые капризы и троллинг
+  const trollPatterns = [
+    /(купите мне|купи мне|хочу квасу|хочу пива|хочу кушать|хочу денег|скиньтесь мне|дайте мне денег|подарите мне)/i,
+    /(квасу|квас).*(квасу|квас).*(квасу|квас)/i,
+    /([а-яa-z])\1{4,}/i, // повторение одной буквы 5+ раз подряд (например, кваааас)
+    /(ха-ха|лол|кек|прикол|тест123|абракадабра|фыва)/i
+  ]
+  if (trollPatterns.some((re) => re.test(t))) {
+    return { relevant: false, reason: 'Сообщение не содержит общественной инициативы (бытовая просьба или неконструктивный текст)' }
+  }
+
+  // 2. Проверка лексики спама и повторов слов
+  const words = t.match(/[а-яa-z]{3,}/g) || []
+  if (words.length > 4) {
+    const wordFreq = new Map<string, number>()
+    for (const w of words) wordFreq.set(w, (wordFreq.get(w) || 0) + 1)
+    const maxFreq = Math.max(...wordFreq.values())
+    if (maxFreq / words.length > 0.45 && words.length >= 6) {
+      return { relevant: false, reason: 'Высокая концентрация повторяющихся бессмысленных слов' }
+    }
+  }
+
+  // 3. Технический мусор (HTML / CSS / код)
   const tech = ['css', 'html', 'javascript', 'класс', 'элемент', 'код', 'браузер', 'тег'].filter((k) => t.includes(k)).length
-  const civic = ['город', 'улиц', 'район', 'парк', 'транспорт', 'жкх', 'школ', 'област', 'муниципал', 'администрац', 'благоустройств', 'дорог', 'жител', 'снт'].filter((k) => t.includes(k)).length
+  const civic = [
+    'город', 'улиц', 'район', 'парк', 'транспорт', 'жкх', 'школ', 'област', 'муниципал', 'администрац',
+    'благоустройств', 'дорог', 'жител', 'снт', 'деревн', 'посел', 'маршрут', 'больниц', 'поликлиник',
+    'детсад', 'эколог', 'мусор', 'водоснабжен', 'освещен', 'тротуар', 'остановк', 'ремонт', 'детск'
+  ].filter((k) => t.includes(k)).length
   if (tech >= 2 && civic === 0) return { relevant: false, reason: 'Содержание не связано с региональной проблематикой' }
-  if (/(розыск|военнослужащ|избива|полици|уголовн)/.test(t) && !/(предлагаю|инициатив|стратеги|развит)/.test(t))
+
+  // 4. Личные судебные или уголовные жалобы без предложений
+  if (/(розыск|военнослужащ|избива|полици|уголовн)/.test(t) && !/(предлагаю|инициатив|стратеги|развит|прошу организовать|необходимо создать)/.test(t))
     return { relevant: false, reason: 'Обращение носит личный (правоохранительный) характер и не является предложением по развитию региона' }
+
   return { relevant: true }
 }
 
@@ -86,7 +119,13 @@ function extractSubProblems(text: string): string[] {
   return []
 }
 
-function computeScores(text: string, ctx: { clusterSize: number; similarCount: number; isDuplicate: boolean; alignment: StrategicAlignment }) {
+function computeScores(
+  text: string,
+  ctx: { clusterSize: number; similarCount: number; isDuplicate: boolean; alignment: StrategicAlignment; isRelevant?: boolean }
+) {
+  if (ctx.isRelevant === false) {
+    return { concreteness: 0, feasibility: 0, impact: 0, strategyScore: 0, info: 0, uniqueness: 0, usefulness: 0 }
+  }
   const L = text.length, low = text.toLowerCase()
   const hasPlace = PLACE_RE.test(text)
   const hasDigits = /\d/.test(text)
@@ -256,7 +295,13 @@ export function analyzeDataset(rows: SeedRow[]): AnalysisResult {
     const clusterMembers = assigned[i] !== -1 ? (clustersList[assigned[i]] || [i]) : [i]
     const size = clusterMembers.length
     const strategy = rel[i].relevant ? matchStrategy(a.text, a.topic, a.subtopic) : { matches: [], alignment: 'none' as StrategicAlignment, score: 0 }
-    const sc = computeScores(a.text, { clusterSize: size, similarCount: similar[i].length, isDuplicate: !!duplicateOf[i], alignment: strategy.alignment })
+    const sc = computeScores(a.text, {
+      clusterSize: size,
+      similarCount: similar[i].length,
+      isDuplicate: !!duplicateOf[i],
+      alignment: strategy.alignment,
+      isRelevant: rel[i].relevant
+    })
     const { problem, proposal } = classifySentences(a.text)
     const existingInitiative = (a.statusInitiative || '').trim().toLowerCase() === 'уже есть'
     const nonStrategic = (a.statusInitiative || '').trim().toLowerCase() === 'нестратегическая'
@@ -269,6 +314,31 @@ export function analyzeDataset(rows: SeedRow[]): AnalysisResult {
     else if (strategy.alignment === 'direct' || strategy.alignment === 'high') status = 'potential_strategic'
     else if (quality === 'useful' || quality === 'high') status = 'quality'
     else status = 'new'
+    const execution = computeExecutionTracking({
+      id: a.id,
+      topic: a.topic,
+      dateIso: a.dateIso,
+      statusInitiative: a.statusInitiative,
+      analysis: {
+        usefulnessScore: sc.usefulness,
+        alignment: strategy.alignment,
+        quality,
+        isDuplicate: !!duplicateOf[i],
+        relevance: rel[i].relevant ? 'relevant' : 'irrelevant',
+      }
+    })
+
+    const economic = computeEconomicEffect({
+      id: a.id,
+      topic: a.topic,
+      analysis: {
+        usefulnessScore: sc.usefulness,
+        socialImpactScore: sc.impact,
+        alignment: strategy.alignment,
+        relevance: rel[i].relevant ? 'relevant' : 'irrelevant',
+      }
+    })
+
     a.analysis = {
       usefulnessScore: sc.usefulness, concretenessScore: sc.concreteness, feasibilityScore: sc.feasibility,
       socialImpactScore: sc.impact, strategicAlignmentScore: sc.strategyScore, informationValueScore: sc.info, uniquenessScore: sc.uniqueness,
@@ -279,6 +349,7 @@ export function analyzeDataset(rows: SeedRow[]): AnalysisResult {
       normalizedProblem: problem[0] ?? null, normalizedProposal: proposal[0] ?? null,
       expectedEffect: findEffect(a.text, proposal), subProblems: extractSubProblems(a.text),
       status, existingInitiative, nonStrategic,
+      execution, economic,
     }
   })
 

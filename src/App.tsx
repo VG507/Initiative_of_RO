@@ -9,6 +9,7 @@ import Analytics from './pages/Analytics'
 import StrategyPage from './pages/StrategyPage'
 import StrategyIncluded from './pages/StrategyIncluded'
 import StrategyCandidates from './pages/StrategyCandidates'
+import ExecutionPage from './pages/ExecutionPage'
 import Submit from './pages/Submit'
 import { EmptyState } from './components/ui'
 
@@ -29,6 +30,7 @@ export default function App() {
           <Route path="/municipalities" element={<Municipalities />} />
           <Route path="/municipalities/:id" element={<MunicipalityDetail />} />
           <Route path="/analytics" element={<Analytics />} />
+          <Route path="/execution" element={<ExecutionPage />} />
           <Route path="/strategy" element={<StrategyPage />} />
           <Route path="/strategy/included" element={<StrategyIncluded />} />
           <Route path="/strategy/candidates" element={<StrategyCandidates />} />

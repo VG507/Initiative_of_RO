@@ -297,11 +297,11 @@ export function generateAnalyticsPdfReport(
     `#${a.id}`,
     a.cityNorm,
     a.topic,
-    a.analysis.normalizedTitle.length > 70
-      ? a.analysis.normalizedTitle.slice(0, 68) + '…'
+    a.analysis.normalizedTitle.length > 55
+      ? a.analysis.normalizedTitle.slice(0, 53) + '…'
       : a.analysis.normalizedTitle,
-    `${a.analysis.usefulnessScore}`,
-    ALIGN_LABELS[a.analysis.alignment] || a.analysis.alignment
+    `${(a.analysis.economic?.estimatedCost / 1000000).toFixed(1)} млн ₽`,
+    a.analysis.execution?.statusLabel || 'На рассмотрении'
   ])
 
   autoTable(doc, {
@@ -312,13 +312,13 @@ export function generateAnalyticsPdfReport(
     alternateRowStyles: { fillColor: [248, 250, 252] },
     columnStyles: {
       0: { cellWidth: 35, halign: 'center' },
-      1: { cellWidth: 70 },
+      1: { cellWidth: 75 },
       2: { cellWidth: 80 },
-      3: { cellWidth: 215 },
-      4: { cellWidth: 45, halign: 'center' },
-      5: { cellWidth: 70 }
+      3: { cellWidth: 195 },
+      4: { cellWidth: 65, halign: 'right' },
+      5: { cellWidth: 65 }
     },
-    head: [['ID', 'Город/Район', 'Тема', 'Формулировка инициативы', 'Балл', 'Статус']],
+    head: [['ID', 'Город/Район', 'Тема', 'Формулировка инициативы', 'Бюджет', 'Исполнение']],
     body: candidateRows
   })
 

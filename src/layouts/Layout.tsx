@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { Activity, BarChart3, CheckCircle2, ClipboardList, Layers, LayoutDashboard, Lightbulb, MapPin, Menu, Moon, Plus, Search, Sun, Target, X } from 'lucide-react'
+import { Activity, BarChart3, CheckCircle2, ClipboardList, Layers, LayoutDashboard, Lightbulb, MapPin, Menu, Moon, Plus, Search, Sun, Target, TrendingUp, X } from 'lucide-react'
 import { useStore } from '../store/useStore'
 import { Toasts } from '../components/ui'
 
@@ -11,6 +11,7 @@ const NAV = [
     { to: '/clusters', label: 'Кластеры проблем', icon: Layers },
     { to: '/municipalities', label: 'Муниципалитеты', icon: MapPin },
     { to: '/analytics', label: 'Аналитика', icon: BarChart3 },
+    { to: '/execution', label: 'Исполнение и эффект', icon: TrendingUp },
   ]},
   { group: 'Стратегия', items: [
     { to: '/strategy', label: 'Структура стратегии', icon: Target },

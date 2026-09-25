@@ -14,6 +14,44 @@ export interface StrategyMatch {
 }
 export interface SimilarRef { id: string; score: number }
 
+export type ExecutionStatus =
+  | 'under_review'   // На рассмотрении
+  | 'approved'       // Одобрена рабочей группой
+  | 'in_budget'      // Включена в проект/бюджет
+  | 'in_progress'    // В процессе реализации
+  | 'completed'      // Исполнено
+  | 'rejected'       // Отклонено / мотивированный отказ
+
+export interface ExecutionMilestone {
+  title: string
+  date: string
+  completed: boolean
+}
+
+export interface ExecutionTracking {
+  status: ExecutionStatus
+  statusLabel: string
+  isAiEstimated: boolean          // Флаг прогнозной оценки ИИ (не официальный юридический статус)
+  recommendedStatus: string       // Рекомендация модели для профильного ведомства
+  responsibleBody: string         // Ответственный орган (напр., Минтранс РО)
+  targetDate: string | null        // Плановый срок
+  completionDate?: string | null   // Фактический срок
+  progressPercent: number         // 0 - 100%
+  milestones: ExecutionMilestone[]
+  verificationNote?: string        // Примечание / ссылка на закупку или акт
+}
+
+export interface EconomicEffect {
+  estimatedCost: number           // Оценочный бюджет в рублях (модельная оценка)
+  costRangeLabel: string          // Ориентировочная сметная вилка (напр., «5.0 – 8.0 млн ₽»)
+  costCategory: 'micro' | 'small' | 'medium' | 'large' // <1млн, 1-5млн, 5-20млн, >20млн
+  annualSavings: number           // Прямая экономия бюджета в рублях в год
+  beneficiariesCount: number      // Число жителей-благополучателей
+  socialRoiScore: number          // Индекс S-ROI (социальная отдача на рубль вложений)
+  paybackPeriodYears: number | null // Срок окупаемости (для инвест-проектов с экономией)
+  isAiEstimated: boolean          // Маркер экспертного прогноза ИИ
+}
+
 export interface ApplicationAnalysis {
   usefulnessScore: number
   concretenessScore: number
@@ -39,6 +77,8 @@ export interface ApplicationAnalysis {
   status: ApplicationStatus
   existingInitiative: boolean
   nonStrategic: boolean
+  execution: ExecutionTracking
+  economic: EconomicEffect
 }
 
 export interface SeedRow {
@@ -114,4 +154,22 @@ export const STATUS_LABELS: Record<ApplicationStatus, string> = {
   new: 'Новая', analysis: 'Анализируется', quality: 'Качественная',
   potential_strategic: 'Потенциально стратегическая', existing: 'Уже существует',
   duplicate: 'Дубликат', irrelevant: 'Нерелевантная', nonstrategic: 'Нестратегическая',
+}
+
+export const EXECUTION_LABELS: Record<ExecutionStatus, string> = {
+  under_review: 'На рассмотрении',
+  approved: 'Одобрена рабочей группой',
+  in_budget: 'Включена в бюджет/программу',
+  in_progress: 'В процессе реализации',
+  completed: 'Исполнено',
+  rejected: 'Отклонено / Отказ',
+}
+
+export const EXECUTION_TONES: Record<ExecutionStatus, string> = {
+  under_review: 'slate',
+  approved: 'blue',
+  in_budget: 'sky',
+  in_progress: 'amber',
+  completed: 'emerald',
+  rejected: 'orange',
 }
