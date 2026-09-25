@@ -8,6 +8,16 @@ export function Card({ className = '', children }: { className?: string; childre
   return <div className={`rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 ${className}`}>{children}</div>
 }
 
+// Таблица с горизонтальным скроллом и видимой подсказкой, что контент продолжается
+export function TableScroll({ children, className = '' }: { children: ReactNode; className?: string }) {
+  return (
+    <div className={`relative ${className}`}>
+      <div className="overflow-x-auto">{children}</div>
+      <div aria-hidden="true" className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-white to-transparent dark:from-slate-900" />
+    </div>
+  )
+}
+
 const TONES: Record<string, string> = {
   emerald: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
   blue: 'bg-accent/10 text-accent dark:bg-accent/20 dark:text-accent-200',
@@ -48,9 +58,9 @@ export function InfoTip({ text }: { text: string }) {
 export function KpiCard({ label, value, hint, onClick }: { label: string; value: number | string; hint?: string; onClick?: () => void }) {
   const Tag = onClick ? 'button' : 'div'
   return (
-    <Tag onClick={onClick} className={`flex flex-col rounded-lg border border-slate-200 bg-white p-4 text-left dark:border-slate-800 dark:bg-slate-900 ${onClick ? 'transition hover:border-accent/50 hover:shadow-sm' : ''}`}>
+    <Tag onClick={onClick} className={`flex flex-col rounded-lg border border-slate-200 bg-white p-3 text-left dark:border-slate-800 dark:bg-slate-900 sm:p-4 ${onClick ? 'transition hover:border-accent/50 hover:shadow-sm' : ''}`}>
       <span className="flex items-center gap-1 text-xs font-medium text-slate-500 dark:text-slate-400">{label}{hint && <InfoTip text={hint} />}</span>
-      <span className="mt-1 text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-50">{value}</span>
+      <span className="mt-1 text-xl font-semibold tracking-tight text-slate-900 dark:text-slate-50 sm:text-2xl">{value}</span>
     </Tag>
   )
 }
@@ -68,8 +78,9 @@ export function EmptyState({ title, description, action }: { title: string; desc
       <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{title}</p>
       {description && <p className="mt-1 max-w-sm text-xs text-slate-500 dark:text-slate-400">{description}</p>}
       {action && (
-        action.onClick || !action.to ? <button onClick={action.onClick} className="mt-4 rounded-md bg-accent px-3 py-1.5 text-xs font-medium text-white hover:bg-accent-600">{action.label}</button>
-        : <Link to={action.to} className="mt-4 rounded-md bg-accent px-3 py-1.5 text-xs font-medium text-white hover:bg-accent-600">{action.label}</Link>
+        action.onClick || !action.to
+          ? <button onClick={action.onClick} className="mt-4 min-h-[44px] rounded-md bg-accent px-3 py-2 text-xs font-medium text-white hover:bg-accent-600">{action.label}</button>
+          : <Link to={action.to} className="mt-4 flex min-h-[44px] items-center rounded-md bg-accent px-3 py-2 text-xs font-medium text-white hover:bg-accent-600">{action.label}</Link>
       )}
     </div>
   )
@@ -78,7 +89,7 @@ export function EmptyState({ title, description, action }: { title: string; desc
 export function Select({ value, onChange, options, ariaLabel }: { value: string; onChange: (v: string) => void; options: { value: string; label: string }[]; ariaLabel?: string }) {
   return (
     <select aria-label={ariaLabel} value={value} onChange={(e) => onChange(e.target.value)}
-      className="h-9 w-full rounded-md border border-slate-300 bg-white px-2.5 text-sm text-slate-900 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100">
+      className="h-11 w-full rounded-md border border-slate-300 bg-white px-2.5 text-sm text-slate-900 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 sm:h-9">
       {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
     </select>
   )
@@ -96,20 +107,20 @@ export function MultiSelect({ label, options, selected, onChange }: { label: str
   return (
     <div className="relative" ref={ref}>
       <button type="button" aria-expanded={open} onClick={() => setOpen((o) => !o)}
-        className="flex h-9 w-full items-center justify-between gap-2 rounded-md border border-slate-300 bg-white px-3 text-sm dark:border-slate-700 dark:bg-slate-900">
+        className="flex h-11 w-full items-center justify-between gap-2 rounded-md border border-slate-300 bg-white px-3 text-sm dark:border-slate-700 dark:bg-slate-900 sm:h-9">
         <span className={selected.length ? 'text-slate-900 dark:text-slate-100' : 'text-slate-500'}>{label}{selected.length ? `: ${selected.length}` : ''}</span>
         <ChevronDown className="h-4 w-4 shrink-0 text-slate-400" />
       </button>
       {open && (
         <div className="absolute z-40 mt-1 max-h-72 w-full min-w-[230px] overflow-auto rounded-md border border-slate-200 bg-white p-1.5 shadow-lg dark:border-slate-700 dark:bg-slate-900">
           {options.map((o) => (
-            <label key={o.value} className="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-sm hover:bg-slate-50 dark:hover:bg-slate-800">
+            <label key={o.value} className="flex min-h-[44px] cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-sm hover:bg-slate-50 dark:hover:bg-slate-800">
               <input type="checkbox" aria-label={o.label} className="h-4 w-4 accent-[#0F4C81]" checked={selected.includes(o.value)} onChange={() => toggle(o.value)} />
               <span className="text-slate-700 dark:text-slate-300">{o.label}</span>
               {o.count !== undefined && <span className="ml-auto text-xs text-slate-400">{o.count}</span>}
             </label>
           ))}
-          {selected.length > 0 && <button onClick={() => onChange([])} className="mt-1 w-full rounded px-2 py-1 text-xs text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800">Очистить</button>}
+          {selected.length > 0 && <button onClick={() => onChange([])} className="mt-1 w-full rounded px-2 py-2 text-xs text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800">Очистить</button>}
         </div>
       )}
     </div>
@@ -124,14 +135,14 @@ export function Pagination({ page, size, total, onPage, onSize }: { page: number
     <div className="flex flex-wrap items-center justify-between gap-3 pt-4">
       <p className="text-xs text-slate-500">{total === 0 ? '0' : `${(page - 1) * size + 1}–${Math.min(page * size, total)}`} из {total}</p>
       <div className="flex items-center gap-1">
-        <select aria-label="Заявок на страницу" value={size} onChange={(e) => onSize(Number(e.target.value))} className="h-8 rounded-md border border-slate-300 bg-white px-1.5 text-xs dark:border-slate-700 dark:bg-slate-900">
+        <select aria-label="Заявок на страницу" value={size} onChange={(e) => onSize(Number(e.target.value))} className="h-11 rounded-md border border-slate-300 bg-white px-1.5 text-xs dark:border-slate-700 dark:bg-slate-900 sm:h-8">
           {[20, 50, 100].map((n) => <option key={n} value={n}>{n} / стр.</option>)}
         </select>
-        <button aria-label="Назад" disabled={page <= 1} onClick={() => onPage(page - 1)} className="rounded-md border border-slate-300 p-1.5 disabled:opacity-40 dark:border-slate-700"><ChevronLeft className="h-4 w-4" /></button>
+        <button aria-label="Назад" disabled={page <= 1} onClick={() => onPage(page - 1)} className="flex h-11 w-11 items-center justify-center rounded-md border border-slate-300 disabled:opacity-40 dark:border-slate-700 sm:h-9 sm:w-9"><ChevronLeft className="h-4 w-4" /></button>
         {nums.map((n) => (
-          <button key={n} onClick={() => onPage(n)} className={`h-8 w-8 rounded-md border text-xs ${n === page ? 'border-accent bg-accent text-white' : 'border-slate-300 dark:border-slate-700'}`}>{n}</button>
+          <button key={n} onClick={() => onPage(n)} className={`h-11 w-11 rounded-md border text-xs sm:h-9 sm:w-9 ${n === page ? 'border-accent bg-accent text-white' : 'border-slate-300 dark:border-slate-700'}`}>{n}</button>
         ))}
-        <button aria-label="Вперёд" disabled={page >= pages} onClick={() => onPage(page + 1)} className="rounded-md border border-slate-300 p-1.5 disabled:opacity-40 dark:border-slate-700"><ChevronRight className="h-4 w-4" /></button>
+        <button aria-label="Вперёд" disabled={page >= pages} onClick={() => onPage(page + 1)} className="flex h-11 w-11 items-center justify-center rounded-md border border-slate-300 disabled:opacity-40 dark:border-slate-700 sm:h-9 sm:w-9"><ChevronRight className="h-4 w-4" /></button>
       </div>
     </div>
   )
@@ -152,10 +163,15 @@ export function Toasts() {
   )
 }
 
-export function Section({ title, children, hint }: { title: string; children: ReactNode; hint?: string }) {
+export function Section({ title, children, hint, action }: { title: string; children: ReactNode; hint?: string; action?: ReactNode }) {
   return (
     <section className="space-y-3">
-      <h2 className="flex items-center gap-1.5 text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{title}{hint && <InfoTip text={hint} />}</h2>
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="flex items-center gap-1.5 text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+          {title}{hint && <InfoTip text={hint} />}
+        </h2>
+        {action}
+      </div>
       {children}
     </section>
   )

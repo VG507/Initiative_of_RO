@@ -6,6 +6,7 @@ import { Badge, Card, EmptyState, KpiCard, Section } from '../components/ui'
 import { ApplicationCard } from '../components/app/ApplicationViews'
 import { HBar, DynamicsChart } from '../charts/Charts'
 import { byMunicipality, type MunicipalityStats } from '../utils/analytics'
+import { getPopulation } from '../data/municipalityPopulation'
 import { plural } from '../utils/format'
 
 export function Municipalities() {
@@ -20,8 +21,10 @@ export function Municipalities() {
   const compared = stats.filter((s) => compare.includes(s.name))
 
   const cmpRows: { label: string; get: (c: MunicipalityStats) => number | string }[] = [
-    { label: 'Заявок', get: (c) => c.value },
-    { label: 'Доля, %', get: (c) => c.share },
+    { label: 'Заявок всего', get: (c) => c.value },
+    { label: 'Население', get: (c) => c.population ? `${(c.population / 1000).toFixed(0)} тыс. чел.` : '—' },
+    { label: 'Активность (на 10 тыс. жителей)', get: (c) => `${c.perCapitaActivity}` },
+    { label: 'Доля в регионе, %', get: (c) => `${c.share}%` },
     { label: 'Уникальных проблем', get: (c) => c.uniqueProblems },
     { label: 'Средняя полезность', get: (c) => c.avgScore },
     { label: 'Качественных', get: (c) => c.quality },
@@ -82,6 +85,7 @@ export function Municipalities() {
               </div>
               <div className="mt-2 flex flex-wrap gap-1.5">
                 <Badge tone="blue">{plural(s.value, 'заявка', 'заявки', 'заявок')}</Badge>
+                {s.perCapitaActivity > 0 && <Badge tone="sky">{s.perCapitaActivity} на 10 тыс.</Badge>}
                 <Badge tone="slate">{s.uniqueProblems} проблем</Badge>
                 <Badge tone="slate">полезность {s.avgScore}</Badge>
                 <Badge tone="emerald">{s.strategic} стратегических</Badge>
@@ -108,12 +112,19 @@ export function MunicipalityDetail() {
   const munClusters = clusters.filter((c) => clusterIds.includes(c.id)).sort((a, b) => b.frequency - a.frequency)
   const avg = Math.round(apps.reduce((s, a) => s + a.analysis.usefulnessScore, 0) / apps.length)
 
+  const pop = getPopulation(name)
+  const perCapita = pop ? Number(((apps.length / pop) * 10000).toFixed(2)) : null
+
   return (
     <div className="space-y-6">
       <Link to="/municipalities" className="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-accent"><ArrowLeft className="h-3.5 w-3.5" />Муниципалитеты</Link>
-      <h1 className="text-xl font-semibold tracking-tight">{name}</h1>
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h1 className="text-xl font-semibold tracking-tight">{name}</h1>
+        {pop && <span className="text-xs text-slate-500">Население: {(pop / 1000).toFixed(0)} тыс. чел.</span>}
+      </div>
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
         <KpiCard label="Заявок" value={apps.length} />
+        <KpiCard label="На 10 тыс. жителей" value={perCapita != null ? perCapita : '—'} hint="Индекс гражданской активности на душу населения" />
         <KpiCard label="Уникальных проблем" value={munClusters.length} />
         <KpiCard label="Средняя полезность" value={avg} />
         <KpiCard label="Стратегических" value={apps.filter((a) => ['direct', 'high'].includes(a.analysis.alignment)).length} />

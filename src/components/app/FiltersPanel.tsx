@@ -52,10 +52,19 @@ export function FiltersPanel() {
         <Select ariaLabel="Вложение" value={filters.hasAttachment} onChange={(v) => set({ hasAttachment: v as any })} options={[
           { value: 'all', label: 'Вложение: любое' }, { value: 'yes', label: 'С вложением' }, { value: 'no', label: 'Без вложения' },
         ]} />
-        <div className="space-y-1">
-          <label className="text-xs text-slate-500">Полезность: {filters.scoreMin}–{filters.scoreMax}</label>
-          <div className="flex items-center gap-2">
+        <div className="space-y-1 sm:col-span-2 xl:col-span-1">
+          <div className="flex items-center justify-between text-xs text-slate-500">
+            <span>Полезность: <strong className="text-slate-800 dark:text-slate-200">{filters.scoreMin}</strong>–<strong className="text-slate-800 dark:text-slate-200">{filters.scoreMax}</strong></span>
+            <div className="flex items-center gap-1">
+              <button type="button" onClick={() => set({ scoreMin: 70, scoreMax: 100 })} className="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300">70+ (топ)</button>
+              <button type="button" onClick={() => set({ scoreMin: 50, scoreMax: 100 })} className="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300">50+</button>
+              <button type="button" onClick={() => set({ scoreMin: 0, scoreMax: 100 })} className="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300">0–100</button>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 pt-1">
+            <span className="text-[10px] text-slate-400">от</span>
             <input aria-label="Минимальная полезность" type="range" min={0} max={100} value={filters.scoreMin} onChange={(e) => set({ scoreMin: Math.min(Number(e.target.value), filters.scoreMax) })} className="w-full accent-[#0F4C81]" />
+            <span className="text-[10px] text-slate-400">до</span>
             <input aria-label="Максимальная полезность" type="range" min={0} max={100} value={filters.scoreMax} onChange={(e) => set({ scoreMax: Math.max(Number(e.target.value), filters.scoreMin) })} className="w-full accent-[#0F4C81]" />
           </div>
         </div>

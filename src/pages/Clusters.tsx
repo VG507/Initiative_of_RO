@@ -25,8 +25,12 @@ export function Clusters() {
               <h3 className="mt-1.5 line-clamp-2 text-sm font-semibold">{c.title}</h3>
               <p className="mt-1 text-xs text-slate-500">{c.subtopic}</p>
               <div className="mt-3 flex flex-wrap items-center gap-1.5">
-                <Badge tone="blue">{c.frequency} заявок</Badge>
-                <Badge tone="slate">{c.municipalities.length} муниципалитетов</Badge>
+                <Badge tone={c.scope === 'regional' ? 'sky' : 'slate'}>
+                  {c.scope === 'regional' ? 'Региональная' : 'Локальная'}
+                </Badge>
+                <Badge tone="blue">{c.frequency} {c.frequency === 1 ? 'заявка' : 'заявок'}</Badge>
+                {c.duplicatesCount ? <Badge tone="amber">+{c.duplicatesCount} дубл.</Badge> : null}
+                <Badge tone="slate">{c.municipalities.length} муницип.</Badge>
                 <Badge tone="slate">Полезность {c.averageUsefulness}</Badge>
               </div>
               <div className="mt-3 border-t border-slate-100 pt-2 dark:border-slate-800"><AlignBadge level={c.alignment} /></div>
@@ -54,7 +58,11 @@ export function ClusterDetail() {
         <p className="text-xs text-slate-400">{cluster.id} · {cluster.subtopic} · {dates}</p>
         <h1 className="mt-1 text-xl font-semibold tracking-tight">{cluster.title}</h1>
         <div className="mt-2 flex flex-wrap gap-1.5">
-          <Badge tone="blue">{cluster.frequency} заявок</Badge>
+          <Badge tone={cluster.scope === 'regional' ? 'sky' : 'slate'}>
+            {cluster.scope === 'regional' ? 'Региональная (межмуниципальная)' : 'Локальная проблема'}
+          </Badge>
+          <Badge tone="blue">{cluster.frequency} уникальных заявок</Badge>
+          {cluster.duplicatesCount ? <Badge tone="amber">+{cluster.duplicatesCount} дубликатов</Badge> : null}
           <Badge tone="slate">{cluster.municipalities.length} муниципалитетов</Badge>
           <Badge tone="slate">Средняя полезность {cluster.averageUsefulness}</Badge>
           <Badge tone="slate">Индекс значимости {cluster.impactScore}</Badge>

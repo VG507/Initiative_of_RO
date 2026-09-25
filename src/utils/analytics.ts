@@ -13,20 +13,39 @@ export function byDirection(apps: Application[]) {
   }).filter((d) => d.value > 0).sort((a, b) => b.value - a.value)
 }
 
-export interface MunicipalityStats { name: string; value: number; share: number; quality: number; strategic: number; uniqueProblems: number; avgScore: number; duplicates: number }
+import { getPopulation } from '../data/municipalityPopulation'
+
+export interface MunicipalityStats {
+  name: string
+  value: number
+  share: number
+  quality: number
+  strategic: number
+  uniqueProblems: number
+  avgScore: number
+  duplicates: number
+  population: number | null
+  perCapitaActivity: number // Заявок на 10 тыс. жителей
+}
 
 export function byMunicipality(apps: Application[]): MunicipalityStats[] {
   const map = new Map<string, Application[]>()
   for (const a of apps) { const arr = map.get(a.cityNorm); if (arr) arr.push(a); else map.set(a.cityNorm, [a]) }
   const total = apps.length || 1
-  return [...map.entries()].map(([name, list]) => ({
-    name, value: list.length, share: Math.round((list.length / total) * 100),
-    quality: list.filter((a) => ['high', 'useful'].includes(a.analysis.quality)).length,
-    strategic: list.filter((a) => ['direct', 'high'].includes(a.analysis.alignment)).length,
-    uniqueProblems: new Set(list.map((a) => a.analysis.clusterId)).size,
-    avgScore: Math.round(list.reduce((s, a) => s + a.analysis.usefulnessScore, 0) / list.length),
-    duplicates: list.filter((a) => a.analysis.isDuplicate).length,
-  })).sort((a, b) => b.value - a.value)
+  return [...map.entries()].map(([name, list]) => {
+    const pop = getPopulation(name)
+    const perCapita = pop ? Number(((list.length / pop) * 10000).toFixed(2)) : 0
+    return {
+      name, value: list.length, share: Math.round((list.length / total) * 100),
+      quality: list.filter((a) => ['high', 'useful'].includes(a.analysis.quality)).length,
+      strategic: list.filter((a) => ['direct', 'high'].includes(a.analysis.alignment)).length,
+      uniqueProblems: new Set(list.map((a) => a.analysis.clusterId)).size,
+      avgScore: Math.round(list.reduce((s, a) => s + a.analysis.usefulnessScore, 0) / list.length),
+      duplicates: list.filter((a) => a.analysis.isDuplicate).length,
+      population: pop,
+      perCapitaActivity: perCapita,
+    }
+  }).sort((a, b) => b.value - a.value)
 }
 
 export function qualityDist(apps: Application[]) {

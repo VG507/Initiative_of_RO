@@ -71,6 +71,8 @@ export interface ProblemCluster {
   frequency: number
   averageUsefulness: number
   impactScore: number
+  scope: 'regional' | 'local'
+  duplicatesCount?: number
   alignment: StrategicAlignment
   strategyMatches: StrategyMatch[]
 }

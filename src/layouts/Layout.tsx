@@ -11,7 +11,6 @@ const NAV = [
     { to: '/clusters', label: 'Кластеры проблем', icon: Layers },
     { to: '/municipalities', label: 'Муниципалитеты', icon: MapPin },
     { to: '/analytics', label: 'Аналитика', icon: BarChart3 },
-    { to: '/monitoring', label: 'Мониторинг', icon: Activity },
   ]},
   { group: 'Стратегия', items: [
     { to: '/strategy', label: 'Структура стратегии', icon: Target },
@@ -21,6 +20,7 @@ const NAV = [
 ]
 
 function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
+  const itemCls = 'flex min-h-[44px] items-center gap-2.5 rounded-md px-3 py-2.5 text-sm'
   return (
     <nav className="flex-1 space-y-5 overflow-y-auto px-3 py-4">
       {NAV.map((g) => (
@@ -29,7 +29,7 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
           <div className="space-y-0.5">
             {g.items.map((i) => (
               <NavLink key={i.to} to={i.to} end={i.to === '/'} onClick={onNavigate}
-                className={({ isActive }) => `flex items-center gap-2.5 rounded-md px-3 py-2 text-sm ${isActive ? 'bg-accent/10 font-medium text-accent' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'}`}>
+                className={({ isActive }) => `${itemCls} ${isActive ? 'bg-accent/10 font-medium text-accent' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'}`}>
                 <i.icon className="h-4 w-4 shrink-0" />{i.label}
               </NavLink>
             ))}
@@ -38,7 +38,7 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
       ))}
       <div>
         <p className="px-3 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Действия</p>
-        <Link to="/submit" onClick={onNavigate} className="flex items-center gap-2.5 rounded-md px-3 py-2 text-sm text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800">
+        <Link to="/submit" onClick={onNavigate} className={`${itemCls} text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800`}>
           <Plus className="h-4 w-4 shrink-0" />Добавить инициативу
         </Link>
       </div>
@@ -62,17 +62,15 @@ export default function Layout() {
 
   const doSearch = (value: string) => {
     const v = value.trim()
-    if (!v) return
     const p = new URLSearchParams()
-    p.set('q', v)
-    // если уже на странице заявок — заменяем запись истории: страница не «прыгает»
+    if (v) p.set('q', v)
     navigate(`/applications?${p.toString()}`, { replace: location.pathname === '/applications' })
   }
   useEffect(() => {
-    if (q.trim().length < 2) return
-    const t = setTimeout(() => doSearch(q), 400)
+    if (location.pathname !== '/applications') return
+    const t = setTimeout(() => doSearch(q), 350)
     return () => clearTimeout(t)
-  }, [q])
+  }, [q, location.pathname])
 
   return (
     <div className="min-h-screen">
@@ -87,16 +85,19 @@ export default function Layout() {
 
       <div className="flex min-h-screen flex-col lg:pl-64">
         <header className="sticky top-0 z-20 flex h-16 items-center gap-2 border-b border-slate-200 bg-white/90 px-3 backdrop-blur dark:border-slate-800 dark:bg-slate-900/90 sm:gap-3 sm:px-6">
-          <button aria-label="Меню" className="shrink-0 rounded-md p-2 hover:bg-slate-100 dark:hover:bg-slate-800 lg:hidden" onClick={() => setOpen(true)}><Menu className="h-5 w-5" /></button>
+          <button aria-label="Меню" className="shrink-0 rounded-md p-2.5 hover:bg-slate-100 dark:hover:bg-slate-800 lg:hidden" onClick={() => setOpen(true)}><Menu className="h-5 w-5" /></button>
           <form className="relative min-w-0 flex-1" onSubmit={(e) => { e.preventDefault(); doSearch(q) }}>
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            <input value={q} onChange={(e) => setQ(e.target.value)} aria-label="Поиск по заявкам" placeholder="Поиск…" className="h-9 w-full rounded-md border border-slate-300 bg-white pl-9 pr-3 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent dark:border-slate-700 dark:bg-slate-800" />
+            <input value={q} onChange={(e) => setQ(e.target.value)} aria-label="Поиск по заявкам" placeholder="Поиск по заявкам (Enter для перехода)…" className="h-11 w-full rounded-md border border-slate-300 bg-white pl-9 pr-3 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent dark:border-slate-700 dark:bg-slate-800 sm:h-9" />
           </form>
           <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-2">
-            <button aria-label="Переключить тему" onClick={toggleTheme} className="rounded-md p-2 hover:bg-slate-100 dark:hover:bg-slate-800">
+            <button aria-label="Переключить тему" onClick={toggleTheme} className="rounded-md p-2.5 hover:bg-slate-100 dark:hover:bg-slate-800">
               {theme === 'light' ? <Moon className="h-5 w-5 text-slate-500" /> : <Sun className="h-5 w-5 text-slate-400" />}
             </button>
-            <Link to="/submit" className="hidden rounded-md bg-accent px-3.5 py-2 text-xs font-medium text-white hover:bg-accent-600 sm:block">Добавить инициативу</Link>
+            <Link to="/submit" aria-label="Добавить инициативу" className="flex items-center gap-1 rounded-md bg-accent px-2.5 py-2 text-xs font-medium text-white hover:bg-accent-600 sm:px-3.5 sm:py-2.5">
+              <Plus className="h-4 w-4 shrink-0" />
+              <span className="hidden sm:inline">Добавить инициативу</span>
+            </Link>
           </div>
         </header>
 
@@ -119,7 +120,7 @@ export default function Layout() {
           <div className="absolute inset-y-0 left-0 flex w-72 flex-col bg-white dark:bg-slate-900">
             <div className="flex h-16 items-center justify-between border-b border-slate-200 px-4 dark:border-slate-800">
               <span className="text-sm font-semibold">Навигация</span>
-              <button aria-label="Закрыть меню" onClick={() => setOpen(false)}><X className="h-5 w-5" /></button>
+              <button aria-label="Закрыть меню" onClick={() => setOpen(false)} className="rounded-md p-2.5"><X className="h-5 w-5" /></button>
             </div>
             <NavLinks onNavigate={() => setOpen(false)} />
           </div>

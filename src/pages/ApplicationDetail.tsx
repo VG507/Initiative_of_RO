@@ -53,9 +53,21 @@ export default function ApplicationDetail() {
             <Card className="p-4 text-sm leading-relaxed">{an.normalizedProposal || an.normalizedTitle}</Card>
           </Section>
           <div className="grid gap-6 md:grid-cols-3">
-            <Section title="Проблема"><Card className="min-h-[110px] p-4 text-xs leading-relaxed text-slate-600 dark:text-slate-400">{an.normalizedProblem || '—'}</Card></Section>
-            <Section title="Предлагаемое решение"><Card className="min-h-[110px] p-4 text-xs leading-relaxed text-slate-600 dark:text-slate-400">{an.normalizedProposal || '—'}</Card></Section>
-            <Section title="Ожидаемый эффект"><Card className="min-h-[110px] p-4 text-xs leading-relaxed text-slate-600 dark:text-slate-400">{an.expectedEffect || '—'}</Card></Section>
+            <Section title="Проблема">
+              <Card className="min-h-[110px] p-4 text-xs leading-relaxed text-slate-600 dark:text-slate-400">
+                {an.normalizedProblem || <span className="italic text-slate-400 dark:text-slate-500">Сформулирована в общем тексте обращения</span>}
+              </Card>
+            </Section>
+            <Section title="Предлагаемое решение">
+              <Card className="min-h-[110px] p-4 text-xs leading-relaxed text-slate-600 dark:text-slate-400">
+                {an.normalizedProposal || <span className="italic text-slate-400 dark:text-slate-500">{an.normalizedTitle || 'Описано в полном тексте'}</span>}
+              </Card>
+            </Section>
+            <Section title="Ожидаемый эффект">
+              <Card className="min-h-[110px] p-4 text-xs leading-relaxed text-slate-600 dark:text-slate-400">
+                {an.expectedEffect || <span className="italic text-slate-400 dark:text-slate-500">Решение локальной проблематики и повышение качества жизни</span>}
+              </Card>
+            </Section>
           </div>
           {an.subProblems.length > 1 && (
             <Section title="Выделенные подпроблемы" hint="Заявка содержит несколько тем — они выделены автоматически">

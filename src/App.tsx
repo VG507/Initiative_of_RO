@@ -1,4 +1,4 @@
-import { HashRouter, Routes, Route } from 'react-router-dom'
+import { HashRouter, Routes, Route, Navigate } from 'react-router-dom'
 import Layout from './layouts/Layout'
 import Dashboard from './pages/Dashboard'
 import Applications from './pages/Applications'
@@ -9,7 +9,6 @@ import Analytics from './pages/Analytics'
 import StrategyPage from './pages/StrategyPage'
 import StrategyIncluded from './pages/StrategyIncluded'
 import StrategyCandidates from './pages/StrategyCandidates'
-import Monitoring from './pages/Monitoring'
 import Submit from './pages/Submit'
 import { EmptyState } from './components/ui'
 
@@ -33,7 +32,7 @@ export default function App() {
           <Route path="/strategy" element={<StrategyPage />} />
           <Route path="/strategy/included" element={<StrategyIncluded />} />
           <Route path="/strategy/candidates" element={<StrategyCandidates />} />
-          <Route path="/monitoring" element={<Monitoring />} />
+          <Route path="/monitoring" element={<Navigate to="/analytics" replace />} />
           <Route path="/submit" element={<Submit />} />
           <Route path="*" element={<NotFound />} />
         </Route>

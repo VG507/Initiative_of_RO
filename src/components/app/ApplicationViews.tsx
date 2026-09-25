@@ -1,6 +1,6 @@
 import { memo } from 'react'
 import { Link } from 'react-router-dom'
-import { AlignBadge, Badge, Card, ScoreBadge } from '../ui'
+import { AlignBadge, Badge, Card, ScoreBadge, TableScroll } from '../ui'
 import { fmtDate } from '../../utils/format'
 import { QUALITY_LABELS, STATUS_LABELS, type Application } from '../../types'
 
@@ -34,28 +34,30 @@ export const ApplicationCard = memo(function ApplicationCard({ app }: { app: App
 
 export function ApplicationTable({ apps }: { apps: Application[] }) {
   return (
-    <Card className="overflow-x-auto">
-      <table className="w-full min-w-[900px] text-left text-xs">
-        <thead className="border-b border-slate-200 text-[11px] uppercase tracking-wide text-slate-500 dark:border-slate-800">
-          <tr>{['ID', 'Заголовок', 'Муниципалитет', 'Подтема', 'Дата', 'Полезность', 'Качество', 'Стратегия', 'Похожих', 'Статус'].map((h) => <th key={h} className="px-3 py-2.5 font-medium">{h}</th>)}</tr>
-        </thead>
-        <tbody>
-          {apps.map((a) => (
-            <tr key={a.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-800/50">
-              <td className="px-3 py-2.5"><Link to={`/applications/${a.id}`} className="font-medium text-accent hover:underline">#{a.id}</Link></td>
-              <td className="max-w-[280px] truncate px-3 py-2.5 font-medium text-slate-800 dark:text-slate-200">{a.analysis.normalizedTitle}</td>
-              <td className="px-3 py-2.5 text-slate-600 dark:text-slate-400">{a.cityNorm}</td>
-              <td className="px-3 py-2.5 text-slate-600 dark:text-slate-400">{a.subtopic}</td>
-              <td className="px-3 py-2.5 text-slate-500">{fmtDate(a.dateIso)}</td>
-              <td className="px-3 py-2.5 font-semibold">{a.analysis.usefulnessScore}</td>
-              <td className="px-3 py-2.5">{QUALITY_LABELS[a.analysis.quality]}</td>
-              <td className="px-3 py-2.5">{a.analysis.alignment === 'direct' ? 'Прямое' : a.analysis.alignment === 'high' ? 'Высокое' : a.analysis.alignment === 'medium' ? 'Среднее' : a.analysis.alignment === 'weak' ? 'Слабое' : '—'}</td>
-              <td className="px-3 py-2.5">{a.analysis.similarApplications.length}</td>
-              <td className="px-3 py-2.5 text-slate-500">{STATUS_LABELS[a.analysis.status]}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <Card>
+      <TableScroll>
+        <table className="w-full min-w-[900px] text-left text-xs">
+          <thead className="border-b border-slate-200 text-[11px] uppercase tracking-wide text-slate-500 dark:border-slate-800">
+            <tr>{['ID', 'Заголовок', 'Муниципалитет', 'Подтема', 'Дата', 'Полезность', 'Качество', 'Стратегия', 'Похожих', 'Статус'].map((h) => <th key={h} className="px-3 py-2.5 font-medium">{h}</th>)}</tr>
+          </thead>
+          <tbody>
+            {apps.map((a) => (
+              <tr key={a.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-800/50">
+                <td className="px-3 py-2.5"><Link to={`/applications/${a.id}`} className="font-medium text-accent hover:underline">#{a.id}</Link></td>
+                <td className="max-w-[280px] truncate px-3 py-2.5 font-medium text-slate-800 dark:text-slate-200">{a.analysis.normalizedTitle}</td>
+                <td className="px-3 py-2.5 text-slate-600 dark:text-slate-400">{a.cityNorm}</td>
+                <td className="px-3 py-2.5 text-slate-600 dark:text-slate-400">{a.subtopic}</td>
+                <td className="px-3 py-2.5 text-slate-500">{fmtDate(a.dateIso)}</td>
+                <td className="px-3 py-2.5 font-semibold">{a.analysis.usefulnessScore}</td>
+                <td className="px-3 py-2.5">{QUALITY_LABELS[a.analysis.quality]}</td>
+                <td className="px-3 py-2.5">{a.analysis.alignment === 'direct' ? 'Прямое' : a.analysis.alignment === 'high' ? 'Высокое' : a.analysis.alignment === 'medium' ? 'Среднее' : a.analysis.alignment === 'weak' ? 'Слабое' : '—'}</td>
+                <td className="px-3 py-2.5">{a.analysis.similarApplications.length}</td>
+                <td className="px-3 py-2.5 text-slate-500">{STATUS_LABELS[a.analysis.status]}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </TableScroll>
     </Card>
   )
 }

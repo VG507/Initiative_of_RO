@@ -1,7 +1,7 @@
 import type { StrategyDirection, StrategyInitiative, StrategyMatch, StrategicAlignment } from '../types'
 import { normalizeText } from '../analysis/textUtils'
 
-export const D1 = 'Сохранение населения, укрепление здоровья и повышение благополучия людей, поддержка семьи'
+export const D1 = 'Сохранение населения, укрепление здоровья и повышение благополучия людей, поддержка семей'
 export const D2 = 'Реализация потенциала каждого человека, развитие его талантов, воспитание патриотичной и социально ответственной личности'
 export const D3 = 'Комфортная и безопасная среда для жизни'
 export const D4 = 'Экологическое благополучие'

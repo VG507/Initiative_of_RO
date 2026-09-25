@@ -3,7 +3,7 @@ const STOPWORDS = new Set(('и,в,во,на,с,со,по,для,не,ни,что
 const SUFFIXES = ['иями','ями','ами','ах','ях','ом','ем','ам','им','ешь','ете','ут','ют','ат','ят','ов','ев','ей','ой','ый','ий','ая','яя','ое','ее','ые','ие','ых','их','ую','юю','у','ю','а','я','ы','и','е','ь']
 
 export function stem(w: string): string {
-  for (const s of SUFFIXES) if (w.length - s.length >= 4 && w.endsWith(s)) return w.slice(0, w.length - s.length)
+  for (const s of SUFFIXES) if (w.length - s.length >= 3 && w.endsWith(s)) return w.slice(0, w.length - s.length)
   return w
 }
 
@@ -22,6 +22,32 @@ export function queryTokens(q: string): string[] {
 export function tfMap(tokens: string[]): Map<string, number> {
   const m = new Map<string, number>()
   for (const t of tokens) m.set(t, (m.get(t) || 0) + 1)
+  return m
+}
+
+export function computeIdf(docTokens: string[][]): Map<string, number> {
+  const N = docTokens.length || 1
+  const df = new Map<string, number>()
+  for (const toks of docTokens) {
+    const unique = new Set(toks)
+    for (const t of unique) {
+      df.set(t, (df.get(t) || 0) + 1)
+    }
+  }
+  const idf = new Map<string, number>()
+  for (const [t, count] of df.entries()) {
+    idf.set(t, Math.log(1 + (N + 1) / (count + 1)) + 1)
+  }
+  return idf
+}
+
+export function tfidfMap(tokens: string[], idf: Map<string, number>): Map<string, number> {
+  const tf = tfMap(tokens)
+  const m = new Map<string, number>()
+  for (const [t, count] of tf.entries()) {
+    const weight = idf.get(t) ?? 1
+    m.set(t, count * weight)
+  }
   return m
 }
 

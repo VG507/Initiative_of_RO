@@ -3,14 +3,14 @@ import type {
   ProblemCluster, QualityLevel, SeedRow, SimilarRef, StrategicAlignment,
 } from '../types'
 import { matchStrategy } from '../strategy/strategyData'
-import { cosine, decodeEntities, makeTitle, sentences, tfMap, tokenize, trim90 } from './textUtils'
+import { computeIdf, cosine, decodeEntities, makeTitle, sentences, tfidfMap, tokenize, trim90 } from './textUtils'
 
 const PLACE_RE = /(улиц|проспект|бульвар|мкр|микрорайон|район|снт|сквер|площад|набережн|трасс|школ[аыуе]|садик|детск сад|стадион|арен|парковк|парк\b|автовокзал|поселк|хутор|станиц)/i
 const ACTION = ['предлаг','прошу','необходим','нужн','созда','постро','установ','провест','организова','разреш','разработ','открыт','модерниз','восстанов','обустро','расшир','внедр','запуст','рассмотр','перевест','ужесточ','принять','вернуть','возродить','увеличить','сделайте','постройте']
 const SOCIAL = ['детей','дети','школьник','семь','семей','пожил','жител','молодеж','молодёж','родител','студент','больн','граждан','населени','люд']
 const AUDIENCE = ['жител','населени','граждан','многих','люд','тысяч']
-const PROB = ['не хватает','нет ','отсутств','плох','плачевн','не работает','не ремонти','проблем','к сожалению','обделен','запущен','опасн','темно','грязн','трудност','не соответств','не могу','долго','никто','жалоб']
-const PROP = ['прошу','предлагаю','предлагает','необходимо','нужно','сделайте','постройте','поставить','поставьте','установить','создать','провести','организовать','разрешить','разработать','открыть','модерниз','восстанов','обустроить','расширить','внедрить','рассмотреть возможность','перевести','ужесточить','принять','вернуть','возродить','увеличить']
+const PROB = ['не хватает','нет ','отсутств','плох','плачевн','не работает','не ремонти','проблем','к сожалению','обделен','запущен','опасн','темно','грязн','трудност','не соответств','не могу','долго','никто','жалоб','разрушен','ямы','аварийн','невозможно','страдают','неудобн','переполнен','разбит']
+const PROP = ['прошу','предлагаю','предлагает','необходимо','нужно','сделайте','постройте','поставить','поставьте','установить','создать','провести','организовать','разрешить','разработать','открыть','модерниз','восстанов','обустроить','расширить','внедрить','рассмотреть возможность','перевести','ужесточить','принять','вернуть','возродить','увеличить','требуется','хотелось бы','просьба','обращаюсь с просьбой']
 
 const clamp = (n: number, a: number, b: number) => Math.max(a, Math.min(b, n))
 
@@ -48,8 +48,16 @@ function detectRelevance(text: string): { relevant: boolean; reason?: string } {
 }
 
 function classifySentences(text: string) {
+  const solMatch = text.match(/Предлагаемое решение:\s*([^.\n]+(?:\.[^.\n]+)*?)(?=\s*Ожидаемый|$)/i)
+  const probMatch = text.match(/(?:^|Проблема:\s*)([^.\n]+?(?:на улице[^.\n]*|[^.\n]+?))(?=\s*Предлагаемое|$)/i)
   const sents = sentences(text)
   const problem: string[] = [], proposal: string[] = []
+  if (probMatch && text.includes('Предлагаемое решение')) {
+    problem.push(trim90(probMatch[1].replace(/^Проблема:\s*/i, '').trim()))
+  }
+  if (solMatch) {
+    proposal.push(trim90(solMatch[1].trim()))
+  }
   for (const s of sents) {
     const l = s.toLowerCase()
     if (PROP.some((k) => l.includes(k)) && proposal.length < 3) proposal.push(trim90(s))
@@ -59,7 +67,9 @@ function classifySentences(text: string) {
 }
 
 function findEffect(text: string, proposal: string[]): string | null {
-  const marks = ['чтобы', 'позволит', 'улучшит', 'положительно скажется', 'будет способствовать', 'повысится', 'привлекательн']
+  const resMatch = text.match(/Ожидаемый (?:результат|эффект):\s*([^.\n]+[.!?]?)/i)
+  if (resMatch) return trim90(resMatch[1].trim())
+  const marks = ['чтобы', 'позволит', 'улучшит', 'положительно скажется', 'будет способствовать', 'повысится', 'привлекательн', 'обеспечит', 'снизит', 'предотвратит', 'безопасн', 'комфортн', 'поможет', 'сократит', 'развити', 'решит']
   for (const s of sentences(text)) {
     if (proposal.some((p) => p.startsWith(s.slice(0, 40)))) continue
     if (marks.some((m) => s.toLowerCase().includes(m))) return trim90(s)
@@ -129,37 +139,122 @@ export function analyzeDataset(rows: SeedRow[]): AnalysisResult {
   })
   const rel = apps.map((a) => detectRelevance(a.text))
   const toks = apps.map((a) => tokenize(`${a.subtopic} ${a.cityNorm} ${a.text}`))
-  const tfs = toks.map(tfMap)
+  const idf = computeIdf(toks)
+  const tfs = toks.map((t) => tfidfMap(t, idf))
 
-  // Кандидатные пары через инвертированный индекс (масштабируемо до 10 000+ заявок)
+  // Кандидатные пары через инвертированный индекс с адаптивным лимитом частоты
+  const maxDf = Math.max(15, Math.floor(apps.length * 0.45))
   const inverted = new Map<string, number[]>()
-  toks.forEach((list, i) => { for (const t of new Set(list)) { const arr = inverted.get(t); if (arr) arr.push(i); else inverted.set(t, [i]) } })
+  toks.forEach((list, i) => {
+    for (const t of new Set(list)) {
+      const arr = inverted.get(t)
+      if (arr) arr.push(i)
+      else inverted.set(t, [i])
+    }
+  })
   const pairKeys = new Set<number>()
   for (const ids of inverted.values()) {
-    if (ids.length < 2 || ids.length > 15) continue
-    for (let x = 0; x < ids.length; x++) for (let y = x + 1; y < ids.length; y++) pairKeys.add(ids[x] * 100000 + ids[y])
+    if (ids.length < 2 || ids.length > maxDf) continue
+    for (let x = 0; x < ids.length; x++) {
+      for (let y = x + 1; y < ids.length; y++) {
+        pairKeys.add(ids[x] * 100000 + ids[y])
+      }
+    }
   }
+
   const similar: SimilarRef[][] = apps.map(() => [])
   const duplicateOf: (string | undefined)[] = apps.map(() => undefined)
-  const parent = apps.map((_, i) => i)
-  const find = (x: number): number => (parent[x] === x ? x : (parent[x] = find(parent[x])))
+
+  // 1. Предварительный проход: выявляем дубликаты (косинус >= 0.85)
   for (const key of pairKeys) {
     const x = Math.floor(key / 100000), y = key % 100000
     const s = cosine(tfs[x], tfs[y])
-    if (s < 0.42) continue
-    similar[x].push({ id: apps[y].id, score: s })
-    similar[y].push({ id: apps[x].id, score: s })
-    const rx = find(x), ry = find(y)
-    if (rx !== ry) parent[Math.max(rx, ry)] = Math.min(rx, ry)
-    if (s >= 0.85) duplicateOf[y] = apps[x].id
+    if (s >= 0.85 && duplicateOf[y] === undefined) {
+      duplicateOf[y] = apps[x].id
+    }
+  }
+
+  // 2. Формируем граф сходств: в кластеризацию идут ТОЛЬКО уникальные заявки
+  const edges: { x: number; y: number; s: number }[] = []
+  for (const key of pairKeys) {
+    const x = Math.floor(key / 100000), y = key % 100000
+    const sameTopic = apps[x].topic === apps[y].topic
+    const s = cosine(tfs[x], tfs[y])
+
+    if (s >= 0.42 && (sameTopic || s >= 0.70)) {
+      similar[x].push({ id: apps[y].id, score: s })
+      similar[y].push({ id: apps[x].id, score: s })
+      // Исключаем дубликаты из кластеризации:
+      if (!duplicateOf[x] && !duplicateOf[y]) {
+        edges.push({ x, y, s })
+      }
+    }
   }
   similar.forEach((l) => l.sort((a, b) => b.score - a.score))
 
-  const clusterMembers = new Map<number, number[]>()
-  apps.forEach((_, i) => { const r = find(i); const arr = clusterMembers.get(r); if (arr) arr.push(i); else clusterMembers.set(r, [i]) })
+  // Average-Linkage кластеризация уникальных заявок
+  edges.sort((a, b) => b.s - a.s)
+  const clustersList: number[][] = []
+  const assigned = new Int32Array(apps.length).fill(-1)
+
+  for (const edge of edges) {
+    const { x, y } = edge
+    const cx = assigned[x]
+    const cy = assigned[y]
+
+    if (cx === -1 && cy === -1) {
+      const cid = clustersList.length
+      clustersList.push([x, y])
+      assigned[x] = cid
+      assigned[y] = cid
+    } else if (cx !== -1 && cy === -1) {
+      const members = clustersList[cx]
+      const avgSim = members.reduce((sum, m) => sum + cosine(tfs[y], tfs[m]), 0) / members.length
+      if (avgSim >= 0.38) {
+        members.push(y)
+        assigned[y] = cx
+      }
+    } else if (cx === -1 && cy !== -1) {
+      const members = clustersList[cy]
+      const avgSim = members.reduce((sum, m) => sum + cosine(tfs[x], tfs[m]), 0) / members.length
+      if (avgSim >= 0.38) {
+        members.push(x)
+        assigned[x] = cy
+      }
+    } else if (cx !== cy) {
+      const mx = clustersList[cx]
+      const my = clustersList[cy]
+      if (mx.length > 0 && my.length > 0) {
+        let totalSim = 0
+        for (const ix of mx) {
+          for (const iy of my) {
+            totalSim += cosine(tfs[ix], tfs[iy])
+          }
+        }
+        const avgInterSim = totalSim / (mx.length * my.length)
+        if (avgInterSim >= 0.40) {
+          for (const iy of my) {
+            assigned[iy] = cx
+            mx.push(iy)
+          }
+          my.length = 0
+        }
+      }
+    }
+  }
+
+  // Оставшиеся нераспределенные УНИКАЛЬНЫЕ заявки формируют самостоятельные кластеры
+  apps.forEach((_, i) => {
+    if (!duplicateOf[i] && assigned[i] === -1) {
+      const cid = clustersList.length
+      clustersList.push([i])
+      assigned[i] = cid
+    }
+  })
 
   apps.forEach((a, i) => {
-    const size = clusterMembers.get(find(i))!.length
+    const clusterMembers = assigned[i] !== -1 ? (clustersList[assigned[i]] || [i]) : [i]
+    const size = clusterMembers.length
     const strategy = rel[i].relevant ? matchStrategy(a.text, a.topic, a.subtopic) : { matches: [], alignment: 'none' as StrategicAlignment, score: 0 }
     const sc = computeScores(a.text, { clusterSize: size, similarCount: similar[i].length, isDuplicate: !!duplicateOf[i], alignment: strategy.alignment })
     const { problem, proposal } = classifySentences(a.text)
@@ -188,9 +283,9 @@ export function analyzeDataset(rows: SeedRow[]): AnalysisResult {
   })
 
   const clusters: ProblemCluster[] = []
-  const roots = [...clusterMembers.keys()].sort((a, b) => a - b)
-  roots.forEach((root, ci) => {
-    const members = clusterMembers.get(root)!.map((i) => apps[i])
+  const validClusters = clustersList.filter((m) => m.length > 0)
+  validClusters.forEach((membersIdx, ci) => {
+    const members = membersIdx.map((i) => apps[i])
     const titles = members.map((m) => m.analysis.normalizedTitle)
     const title = titles.reduce((s1, s2) => (s1.length <= s2.length ? s1 : s2))
     const alignment = members.reduce<StrategicAlignment>((best, m) => (ALIGN_RANK[m.analysis.alignment] > ALIGN_RANK[best] ? m.analysis.alignment : best), 'none')
@@ -200,17 +295,43 @@ export function analyzeDataset(rows: SeedRow[]): AnalysisResult {
       const e = agg.get(k); if (e) e.n++; else agg.set(k, { m: sm, n: 1 })
     }
     const strategyMatches = [...agg.values()].sort((a, b) => b.n - a.n).slice(0, 3).map((e) => e.m)
+    const municipalities = [...new Set(members.map((m) => m.cityNorm))]
+    const scope: 'regional' | 'local' = municipalities.length >= 3 ? 'regional' : 'local'
+    const clusterId = `CL-${String(ci + 1).padStart(3, '0')}`
+
+    // Считаем число дубликатов, поданных к заявкам этого кластера
+    const memberIds = new Set(members.map((m) => m.id))
+    const duplicatesCount = apps.filter((a) => a.analysis.duplicateOf && memberIds.has(a.analysis.duplicateOf)).length
+
     clusters.push({
-      id: `CL-${String(ci + 1).padStart(3, '0')}`, title: trim80(title),
-      subtopic: mode(members.map((m) => m.subtopic)), direction: mode(members.map((m) => m.topic)),
-      applicationIds: members.map((m) => m.id), municipalities: [...new Set(members.map((m) => m.cityNorm))],
+      id: clusterId,
+      title: trim80(title),
+      subtopic: mode(members.map((m) => m.subtopic)),
+      direction: mode(members.map((m) => m.topic)),
+      applicationIds: members.map((m) => m.id),
+      municipalities,
       frequency: members.length,
       averageUsefulness: Math.round(members.reduce((s, m) => s + m.analysis.usefulnessScore, 0) / members.length),
-      impactScore: 0, alignment, strategyMatches,
+      impactScore: 0,
+      scope,
+      duplicatesCount,
+      alignment,
+      strategyMatches,
     })
-    members.forEach((m) => { m.analysis.clusterId = clusters[clusters.length - 1].id })
+    members.forEach((m) => { m.analysis.clusterId = clusterId })
   })
-  const raw = clusters.map((c) => c.frequency * c.averageUsefulness * ALIGN_W[c.alignment])
+
+  // Привязываем дубликаты к кластеру их оригинальной заявки
+  apps.forEach((a) => {
+    if (a.analysis.isDuplicate && a.analysis.duplicateOf) {
+      const orig = apps.find((x) => x.id === a.analysis.duplicateOf)
+      if (orig?.analysis?.clusterId) {
+        a.analysis.clusterId = orig.analysis.clusterId
+      }
+    }
+  })
+
+  const raw = clusters.map((c) => c.frequency * c.averageUsefulness * ALIGN_W[c.alignment] * (c.scope === 'regional' ? 1.2 : 1.0))
   const max = Math.max(...raw, 1)
   clusters.forEach((c, i) => { c.impactScore = Math.round((raw[i] / max) * 100) })
 
@@ -220,10 +341,14 @@ export function analyzeDataset(rows: SeedRow[]): AnalysisResult {
 function trim80(s: string): string { return s.length > 80 ? s.slice(0, 77).replace(/\s+\S*$/, '') + '…' : s }
 
 export function findMostSimilar(text: string, subtopic: string, apps: Application[]): SimilarRef | null {
-  const tf = tfMap(tokenize(`${subtopic} ${text}`))
+  const allToks = apps.map((a) => tokenize(`${a.subtopic} ${a.cityNorm} ${a.text}`))
+  const queryToks = tokenize(`${subtopic} ${text}`)
+  const idf = computeIdf([...allToks, queryToks])
+  const queryTfIdf = tfidfMap(queryToks, idf)
   let best: SimilarRef | null = null
-  for (const a of apps) {
-    const s = cosine(tf, tfMap(tokenize(`${a.subtopic} ${a.cityNorm} ${a.text}`)))
+  for (let i = 0; i < apps.length; i++) {
+    const a = apps[i]
+    const s = cosine(queryTfIdf, tfidfMap(allToks[i], idf))
     if (!best || s > best.score) best = { id: a.id, score: s }
   }
   return best && best.score >= 0.5 ? best : null
